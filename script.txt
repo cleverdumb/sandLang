@@ -1,0 +1,40 @@
+atom Empty {
+    section property {
+        def render 0
+    }
+}
+
+atom Sand {
+    section property {
+        def render 1
+        def color #FFDDA1
+    }
+    section definition {
+        def L <Empty, Water>
+    }
+    section update {
+        match (0, 0, 1, 2) {
+            pattern
+            x
+            L
+        }
+        -> {
+            def L = pick(0, 1)
+            pattern
+            L
+            x
+        }
+
+        match (0, 0, 2, 2) sym(x) {
+            pattern
+            x _
+            n L
+        }
+        -> {
+            def L = pick(1, 1)
+            pattern
+            L /
+            / x
+        }
+    }
+}
