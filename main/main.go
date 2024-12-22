@@ -5,7 +5,7 @@ import (
 	"log"
 	"runtime"
 	"slices"
-	"time"
+	"sync"
 	"unsafe"
 
 	_ "image/png"
@@ -51,7 +51,7 @@ const (
 	scrH        = 800
 	bw          = scrW / gw
 	bh          = scrH / gh
-	threadCount = 1
+	threadCount = 7
 )
 
 // Vertex Data for Full-Screen Quad
@@ -84,7 +84,8 @@ var texMap = make(map[uint8]uint32)
 var atoms = make(map[string]*compile.AtomRef)
 var idMap = make(map[uint8]string)
 var revIdMap = make(map[string]uint8)
-var propCache = make(map[string](map[string]float32))
+
+var zones [gh / 10][gw / 10]sync.Mutex
 
 type cell struct {
 	x uint16
@@ -94,6 +95,8 @@ type cell struct {
 	vao uint32
 
 	prop map[string]float32
+
+	// mutex *sync.Mutex
 }
 
 func init() {
@@ -199,25 +202,53 @@ outside:
 			break outside
 		default:
 			rx, ry := rand.Intn(gw), rand.Intn(gh)
+			zx, zy := int(rx/10), int(ry/10)
 
-			// rx, ry := 4, 4
-
-			ref := *atoms[idMap[grid[ry][rx].t]]
-
-			for ind, rule := range ref.Rules {
-				ruleApply := true
-				if !matchRule(ref, rx, ry, ind) {
-					ruleApply = false
+			for dy := -1; dy <= 1; dy++ {
+				for dx := -1; dx <= 1; dx++ {
+					if zx+dx >= 0 && zx+dx < (gw/10) && zy+dy >= 0 && zy+dy < (gh/10) {
+						zones[zy+dy][zx+dx].Lock()
+					}
 				}
-
-				if ruleApply {
-					doSteps(rule, rx, ry)
-				}
-
-				// fmt.Println(ind, ruleApply)
 			}
 
-			time.Sleep(1 * time.Microsecond)
+			// for zones[zy][zx] {
+			// 	rx, ry = rand.Intn(gw), rand.Intn(gh)
+			// 	zx, zy = int(rx/10), int(ry/10)
+			// }
+
+			// zones[zy][zx].Lock()
+
+			// grid[ry][rx].mutex.Lock()
+			// defer grid[ry][rx].mutex.Unlock()
+			// rx, ry := 4, 4
+
+			if name, ok := idMap[grid[ry][rx].t]; ok {
+				ref := *atoms[name]
+
+				for ind, rule := range ref.Rules {
+					ruleApply := true
+					if !matchRule(ref, rx, ry, ind) {
+						ruleApply = false
+					}
+
+					if ruleApply {
+						doSteps(rule, rx, ry)
+					}
+
+					// fmt.Println(ind, ruleApply)
+				}
+			}
+
+			for dy := -1; dy <= 1; dy++ {
+				for dx := -1; dx <= 1; dx++ {
+					if zx+dx >= 0 && zx+dx < (gw/10) && zy+dy >= 0 && zy+dy < (gh/10) {
+						zones[zy+dy][zx+dx].Unlock()
+					}
+				}
+			}
+
+			// time.Sleep(10 * time.Nanosecond)
 			// break outside
 		}
 	}
