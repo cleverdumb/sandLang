@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"runtime"
+	"slices"
 	"unsafe"
 
 	_ "image/png"
+
+	"math/rand"
 
 	"example.com/compile"
 	"github.com/go-gl/gl/v2.1/gl"
@@ -42,12 +44,13 @@ void main() {
 ` + "\x00"
 
 const (
-	gw   = 200
-	gh   = 200
-	scrW = 800
-	scrH = 800
-	bw   = scrW / gw
-	bh   = scrH / gh
+	gw          = 200
+	gh          = 200
+	scrW        = 800
+	scrH        = 800
+	bw          = scrW / gw
+	bh          = scrH / gh
+	threadCount = 1
 )
 
 // Vertex Data for Full-Screen Quad
@@ -79,6 +82,8 @@ var texMap = make(map[uint8]uint32)
 
 var atoms = make(map[string]*compile.AtomRef)
 var idMap = make(map[uint8]string)
+var revIdMap = make(map[string]uint8)
+var propCache = make(map[string](map[string]float32))
 
 type cell struct {
 	x uint16
@@ -86,6 +91,8 @@ type cell struct {
 	t uint8
 
 	vao uint32
+
+	prop map[string]float32
 }
 
 func init() {
@@ -94,9 +101,11 @@ func init() {
 }
 
 func main() {
+	// s := time.Now()
 	compile.CompileScript(false)
 	atoms = compile.Atoms
 	compile.LogAtoms(atoms)
+	// fmt.Println(time.Since(s))
 	// Initialize GLFW
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
@@ -138,40 +147,214 @@ func main() {
 	gl.LinkProgram(program)
 	gl.UseProgram(program)
 
-	for yi := uint16(0); yi < gh; yi++ {
-		for xi := uint16(0); xi < gw; xi++ {
-			if rand.Intn(2) == 0 {
-				grid[yi][xi] = *makeCell(xi, yi, 0)
-			} else {
-				grid[yi][xi] = *makeCell(xi, yi, 1)
-			}
-		}
-	}
-
 	for name, v := range atoms {
 		texMap[v.Id] = generateColorTexture(v.Color.R, v.Color.G, v.Color.B)
 		idMap[v.Id] = name
+		revIdMap[name] = v.Id
+	}
+
+	for yi := uint16(0); yi < gh; yi++ {
+		for xi := uint16(0); xi < gw; xi++ {
+			if yi < gh/2 {
+				grid[yi][xi] = *makeCell(xi, yi, 1)
+			} else {
+				grid[yi][xi] = *makeCell(xi, yi, 0)
+			}
+			// grid[yi][xi] = *makeCell(xi, yi, 0)
+		}
+	}
+
+	// changeType(4, 4, 1)
+	// changeType(4, 5, 1)
+
+	// fmt.Println(grid[4][4])
+
+	quitCh := make(chan uint8)
+
+	for x := 0; x < threadCount; x++ {
+		go updateThread(quitCh)
 	}
 
 	// Render Loop
 	for !window.ShouldClose() {
 		// Clear screen and draw the texture
 		// s := time.Now()
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
 		drawAll()
 		window.SwapBuffers()
 		glfw.PollEvents()
 		// fmt.Println(time.Since(s))
 		// time.Sleep(1000 / 60 * time.Millisecond)
 	}
+
+	quitCh <- 1
+}
+
+func updateThread(quit chan uint8) {
+outside:
+	for {
+		select {
+		case <-quit:
+			break outside
+		default:
+			rx, ry := rand.Intn(gw), rand.Intn(gh)
+
+			// rx, ry := 4, 4
+
+			ref := *atoms[idMap[grid[ry][rx].t]]
+
+			for ind, rule := range ref.Rules {
+				ruleApply := true
+				if !matchRule(ref, rx, ry, ind) {
+					ruleApply = false
+				}
+
+				if ruleApply {
+					doSteps(rule, rx, ry)
+				}
+
+				// fmt.Println(ind, ruleApply)
+			}
+
+			// time.Sleep(50 * time.Nanosecond)
+			// break outside
+		}
+	}
+}
+
+func changeType(x, y int, newT uint8) {
+	// fmt.Println(newT)
+	name := idMap[newT]
+	grid[y][x].t = newT
+	// fmt.Println(name)
+	for n, val := range atoms[name].Prop {
+		// if _, ok := grid[y][x].prop[n]; !ok {
+		grid[y][x].prop[n] = val
+		// }
+	}
+}
+
+func matchRule(atom compile.AtomRef, rx, ry int, ruleInd int) bool {
+	r := atom.Rules[ruleInd]
+	ox, oy := rx-int(r.Ox), ry-int(r.Oy)
+	matching := true
+
+out:
+	for dy := 0; dy < int(r.H); dy++ {
+		for dx := 0; dx < int(r.W); dx++ {
+			tarX, tarY := ox+dx, oy+dy
+			cellRule := r.Match[dy*int(r.W)+dx]
+			outside := false
+			if tarX < 0 || tarX >= gw || tarY < 0 || tarY >= gh {
+				outside = true
+			}
+			if outside {
+				if cellRule != "e" {
+					matching = false
+				}
+				break out
+			}
+			switch cellRule {
+			case "e":
+				if !outside {
+					matching = false
+					break out
+				}
+			case "*":
+				if outside {
+					matching = false
+					break out
+				}
+			case "x":
+				continue
+			case "_":
+				if !outside {
+					if idMap[grid[tarY][tarX].t] != "Empty" {
+						matching = false
+						break out
+					}
+				}
+			case "n":
+				if !outside {
+					if idMap[grid[tarY][tarX].t] == "Empty" {
+						matching = false
+						break out
+					}
+				}
+			default:
+				if v, ok := atom.Def[cellRule]; ok {
+					if !slices.Contains(v, idMap[grid[tarY][tarX].t]) {
+						matching = false
+						break out
+					}
+				} else {
+					matching = false
+					break out
+				}
+			}
+		}
+	}
+	return matching
+}
+
+func doSteps(rule compile.Rule, tx, ty int) {
+	steps := rule.Steps
+	localSymbols := make(map[string]cell)
+	for _, step := range steps {
+		switch step.Opcode {
+		case 5:
+			sym := step.Name[0]
+			cx, cy := step.Operand[0], step.Operand[1]
+			localSymbols[sym] = grid[cy+ty-int(rule.Oy)][cx+tx-int(rule.Ox)]
+		case 4:
+			// fmt.Println("APPLY", tx, ty)
+			applyPattern(rule, tx, ty, localSymbols)
+		}
+	}
+}
+
+func transfer(from cell, tx, ty int) {
+	grid[ty][tx].t = from.t
+	for n, v := range from.prop {
+		grid[ty][tx].prop[n] = v
+	}
+}
+
+func applyPattern(rule compile.Rule, tarX, tarY int, symbols map[string]cell) {
+	tempCentre := grid[tarY][tarX]
+	// fmt.Println(tempCentre)
+	ox, oy := tarX-int(rule.Ox), tarY-int(rule.Oy)
+	// transfer(tarX, tarY, int(rule.Ox), int(rule.Oy))
+	for dy := 0; dy < int(rule.H); dy++ {
+		for dx := 0; dx < int(rule.W); dx++ {
+			tx, ty := ox+dx, oy+dy
+			cellRule := rule.Pat[dy*int(rule.W)+dx]
+			switch cellRule {
+			case "/":
+				continue
+			case "x":
+				// grid[ty][tx] = tempCentre
+				transfer(tempCentre, tx, ty)
+			case "_":
+				// grid[ty][tx].t = revIdMap["Empty"]
+				changeType(tx, ty, revIdMap["Empty"])
+			default:
+				if v, ok := symbols[cellRule]; ok {
+					transfer(v, tx, ty)
+				}
+			}
+		}
+	}
+	// fmt.Printf("FF: %+v\n", grid[4][4])
 }
 
 func makeCell(x, y uint16, t uint8) *cell {
 	return &cell{
-		x:   x,
-		y:   y,
-		t:   t,
-		vao: genVao(x, y),
+		x:    x,
+		y:    y,
+		t:    t,
+		vao:  genVao(x, y),
+		prop: make(map[string]float32),
 	}
 }
 
@@ -226,9 +409,15 @@ func draw(textureID, vao uint32) {
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
 }
 
-func (c *cell) drawCell() {
-	if atoms[idMap[c.t]].Prop["render"] == 1 {
-		draw(texMap[c.t], c.vao)
+func (c cell) drawCell() {
+	_, ok := idMap[c.t]
+	if ok {
+		if atoms[idMap[c.t]].ConstProp["render"] == 1 {
+			t, ok := texMap[c.t]
+			if ok {
+				draw(t, c.vao)
+			}
+		}
 	}
 }
 
