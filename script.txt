@@ -1,13 +1,14 @@
 atom Empty {
     section property {
-        def render 0
+        cdef render 0
     }
 }
 
 atom Sand {
     section property {
-        def render 1
-        def color #FFDDA1
+        cdef render 1
+        cdef color #FFDDA1
+        def heat 0
     }
     section definition {
         def L <Empty, Water>

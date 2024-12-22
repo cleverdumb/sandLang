@@ -17,12 +17,12 @@ func checkErr(e error) {
 var Atoms = make(map[string]*AtomRef)
 
 type AtomRef struct {
-	Id    uint8
-	Color Color
-	Prop  map[string]float32
-	// constProp map[string]float32
-	Def   map[string][]string
-	Rules []Rule
+	Id        uint8
+	Color     Color
+	Prop      map[string]float32
+	ConstProp map[string]float32
+	Def       map[string][]string
+	Rules     []Rule
 }
 
 type Color struct {
@@ -44,16 +44,17 @@ type Rule struct {
 }
 
 // opcode:
-// 0 - set [name] to [0]
-// 1 - change [name] by [0]
-// 2 - clamp [name] into [0] and [1] ([0] < [1])
-// 3 - randomise [name] between [0] and [1] ([0] < [1]), steps [2]
+// 0 - set [name[0]] to [0]
+// 1 - change [name[0]] by [0]
+// 2 - clamp [name[0]] into [0] and [1] ([0] < [1])
+// 3 - randomise [name[0]] between [0] and [1] ([0] < [1]), steps [2]
 // 4 - map to pattern
-// 5 - set symbol [name] to cell at coord [1][0]
+// 5 - set symbol [name[0]] to cell at coord [1][0]
+// 6 - remember names [name[0], name[1], ...] at coord [1][0]
 type Step struct {
-	opcode  uint8
-	name    string
-	operand []int
+	Opcode  uint8
+	Name    []string
+	Operand []int
 }
 
 // type Condition struct {
@@ -105,7 +106,7 @@ outsideLoop:
 
 		case strings.HasPrefix(l, "atom"):
 			name := reg["atom"].FindStringSubmatch(l)[1]
-			Atoms[name] = &AtomRef{Id: uint8(currAtomId), Prop: make(map[string]float32), Def: make(map[string][]string)}
+			Atoms[name] = &AtomRef{Id: uint8(currAtomId), Prop: make(map[string]float32), ConstProp: make(map[string]float32), Def: make(map[string][]string)}
 			currentAtom = name
 			inAtomDeclaration = true
 			if log {
@@ -160,7 +161,7 @@ outsideLoop:
 				fmt.Println(lineNum, "Start of section:", name)
 			}
 
-		case sections["property"] && strings.HasPrefix(l, "def"):
+		case sections["property"] && (strings.HasPrefix(l, "cdef") || strings.HasPrefix(l, "def")):
 			split := reg["anySpace"].Split(l, -1)
 			n, v := split[1], split[2]
 			if n == "color" {
@@ -181,7 +182,11 @@ outsideLoop:
 			} else {
 				num, err := strconv.ParseFloat(v, 32)
 				checkErr(err)
-				Atoms[currentAtom].Prop[n] = float32(num)
+				if l[0] == 'c' {
+					Atoms[currentAtom].ConstProp[n] = float32(num)
+				} else {
+					Atoms[currentAtom].Prop[n] = float32(num)
+				}
 				if log {
 					fmt.Println(lineNum, "Set property", n, "of", currentAtom, "to", num)
 				}
@@ -204,7 +209,7 @@ outsideLoop:
 					fmt.Printf("%v Start of pattern with height %v\n", lineNum, patternLineCount)
 				}
 				if inRule == 2 {
-					newRule.Steps = append(newRule.Steps, Step{opcode: 4})
+					newRule.Steps = append(newRule.Steps, Step{Opcode: 4})
 				}
 			}
 
@@ -270,7 +275,7 @@ outsideLoop:
 
 					y, err := strconv.ParseInt(val[1], 10, 8)
 					checkErr(err)
-					newRule.Steps = append(newRule.Steps, Step{opcode: 5, name: sym, operand: []int{int(x), int(y)}})
+					newRule.Steps = append(newRule.Steps, Step{Opcode: 5, Name: []string{sym}, Operand: []int{int(x), int(y)}})
 					if log {
 						fmt.Printf("%v Added step to define %v at coord (%v, %v)\n", lineNum, sym, x, y)
 					}

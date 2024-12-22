@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime"
 	"slices"
+	"time"
 	"unsafe"
 
 	_ "image/png"
@@ -216,7 +217,7 @@ outside:
 				// fmt.Println(ind, ruleApply)
 			}
 
-			// time.Sleep(50 * time.Nanosecond)
+			time.Sleep(1 * time.Microsecond)
 			// break outside
 		}
 	}
@@ -234,8 +235,8 @@ func changeType(x, y int, newT uint8) {
 	}
 }
 
-func matchRule(atom compile.AtomRef, rx, ry int, ruleInd int) bool {
-	r := atom.Rules[ruleInd]
+func matchRule(atom compile.AtomRef, rx, ry int, ruleIndex int) bool {
+	r := atom.Rules[ruleIndex]
 	ox, oy := rx-int(r.Ox), ry-int(r.Oy)
 	matching := true
 
