@@ -255,8 +255,8 @@ outsideLoop:
 					newRule.Oy = int8(oy)
 					newRule.Id = newRuleId
 
-					fmt.Println(nums[4])
-					fmt.Println(reg["fromSym"].FindStringSubmatch(nums[4]))
+					// fmt.Println(nums[4])
+					// fmt.Println(reg["fromSym"].FindStringSubmatch(nums[4]))
 					if nums[4] != "" {
 						switch reg["fromSym"].FindStringSubmatch(nums[4])[1] {
 						case "xy":

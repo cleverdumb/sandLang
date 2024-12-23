@@ -52,7 +52,7 @@ const (
 	scrH        = 800
 	bw          = scrW / gw
 	bh          = scrH / gh
-	threadCount = 1
+	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
 )
@@ -150,19 +150,19 @@ func main() {
 
 	for yi := uint16(0); yi < gh; yi++ {
 		for xi := uint16(0); xi < gw; xi++ {
-			if yi < gh/4 {
-				grid[yi][xi] = *makeCell(xi, yi, 1)
-			} else if yi < gh/2 {
-				grid[yi][xi] = *makeCell(xi, yi, 2)
-			} else {
-				grid[yi][xi] = *makeCell(xi, yi, 0)
-			}
-			// grid[yi][xi] = *makeCell(xi, yi, 0)
+			// if yi < gh/4 {
+			// 	grid[yi][xi] = *makeCell(xi, yi, 1)
+			// } else if yi < gh/2 {
+			// 	grid[yi][xi] = *makeCell(xi, yi, 2)
+			// } else {
+			// 	grid[yi][xi] = *makeCell(xi, yi, 0)
+			// }
+			grid[yi][xi] = *makeCell(xi, yi, 0)
 		}
 	}
 
-	changeType(4, 4, 1)
-	changeType(4, 5, 1)
+	// changeType(4, 4, 1)
+	// changeType(4, 5, 1)
 
 	// fmt.Println(grid[4][4])
 
@@ -171,6 +171,8 @@ func main() {
 	for x := 0; x < threadCount; x++ {
 		go updateThread(quitCh)
 	}
+
+	window.SetMouseButtonCallback(click)
 
 	// Render Loop
 	for !window.ShouldClose() {
@@ -185,6 +187,29 @@ func main() {
 	}
 
 	quitCh <- 1
+}
+
+func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
+	if button == glfw.MouseButton1 && action == glfw.Press {
+		newT := uint8(0)
+		switch mod {
+		case glfw.ModControl:
+			newT = revIdMap["Water"]
+		default:
+			newT = revIdMap["Sand"]
+		}
+		posX, posY := w.GetCursorPos()
+		boxX, boxY := int(posX/bw), int(posY/bh)
+		for y := -10; y <= 10; y++ {
+			for x := -10; x <= 10; x++ {
+				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
+					if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
+						changeType(boxX+x, boxY+y, newT)
+					}
+				}
+			}
+		}
+	}
 }
 
 func updateThread(quit chan uint8) {
@@ -270,10 +295,8 @@ outside:
 }
 
 func changeType(x, y int, newT uint8) {
-	// fmt.Println(newT)
 	name := idMap[newT]
 	grid[y][x].t = newT
-	// fmt.Println(name)
 	for n, val := range atoms[name].Prop {
 		// if _, ok := grid[y][x].prop[n]; !ok {
 		grid[y][x].prop[n] = val
