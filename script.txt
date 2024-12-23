@@ -4,11 +4,9 @@ atom Empty {
     }
 }
 
-atom Sand {
+atom Fall {
     section property {
-        cdef render 1
-        cdef color #FFDDA1
-        def heat 0
+        cdef render 0
     }
     section definition {
         def L <Empty, Water, Slime>
@@ -25,6 +23,20 @@ atom Sand {
             L
             x
         }
+    }
+}
+
+atom Sand {
+    section property {
+        cdef render 1
+        cdef color #FFDDA1
+        def heat 0
+    }
+    section definition {
+        def L <Empty, Water, Slime>
+    }
+    section update {
+        inherit Fall
 
         match (0, 0, 2, 2) sym(x) {
             pattern
@@ -49,16 +61,7 @@ atom Water {
         def L <Empty, Water, Slime>
     }
     section update {
-        match (0, 0, 1, 2) {
-            pattern
-            x
-            _
-        }
-        -> {
-            pattern
-            _
-            x
-        }
+        inherit Fall
 
         match (0, 0, 2, 2) sym(x) {
             pattern

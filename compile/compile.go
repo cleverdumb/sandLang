@@ -83,6 +83,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["pickCoord"] = regexp.MustCompile(`\((\d*),\s+(\d*)\)`)
 	reg["fromSym"] = regexp.MustCompile(`sym\(([xy]*)\)`)
 	reg["fromArrow"] = regexp.MustCompile(`->\s*(P\s*-\s*([\d\.]*))?\s*{`)
+	reg["fromInherit"] = regexp.MustCompile(`inherit\s*(.*)`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	sections := map[string]bool{
@@ -92,7 +93,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	}
 	// 0 - not in rule, 1 - in match phase, 2 - in effect phase
 	inRule := 0
-	var newRuleId uint16 = 0
+	newRuleId := uint16(0)
 	inPattern := false
 	patternLineCount := 0
 	newRule := Rule{}
@@ -300,6 +301,15 @@ outsideLoop:
 						fmt.Printf("%v Start of effect phase\n", lineNum)
 					}
 					continue outsideLoop
+				} else if strings.HasPrefix(l, "inherit") {
+					name := reg["fromInherit"].FindStringSubmatch(l)[1]
+					if v, ok := Atoms[name]; ok {
+						for _, r := range v.Rules {
+							Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, r)
+							Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1].Id = newRuleId
+							newRuleId++
+						}
+					}
 				}
 			}
 
