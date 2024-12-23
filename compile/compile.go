@@ -43,6 +43,7 @@ type Rule struct {
 	Id    uint16
 	XSym  bool
 	YSym  bool
+	Prob  float64
 }
 
 // opcode:
@@ -81,6 +82,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["spacedEqual"] = regexp.MustCompile(`\s*=\s*`)
 	reg["pickCoord"] = regexp.MustCompile(`\((\d*),\s+(\d*)\)`)
 	reg["fromSym"] = regexp.MustCompile(`sym\(([xy]*)\)`)
+	reg["fromArrow"] = regexp.MustCompile(`->\s*(P\s*-\s*([\d\.]*))?\s*{`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	sections := map[string]bool{
@@ -281,6 +283,19 @@ outsideLoop:
 					continue outsideLoop
 				} else if strings.HasPrefix(l, "->") {
 					inRule = 2
+					p := reg["fromArrow"].FindStringSubmatch(l)
+					var prob float64
+					if len(p) >= 3 && p[2] != "" {
+						prob, err = strconv.ParseFloat(p[2], 64)
+						if err != nil {
+							panic(err)
+						}
+					} else {
+						prob = 1
+					}
+
+					newRule.Prob = prob
+
 					if log {
 						fmt.Printf("%v Start of effect phase\n", lineNum)
 					}

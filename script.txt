@@ -11,7 +11,7 @@ atom Sand {
         def heat 0
     }
     section definition {
-        def L <Empty, Water>
+        def L <Empty, Water, Slime>
     }
     section update {
         match (0, 0, 1, 2) {
@@ -45,6 +45,9 @@ atom Water {
         cdef color #46B1C9
         cdef render 1
     }
+    section definition {
+        def L <Empty, Water, Slime>
+    }
     section update {
         match (0, 0, 1, 2) {
             pattern
@@ -63,6 +66,39 @@ atom Water {
             n *
         }
         -> {
+            pattern
+            _ x
+            / /
+        }
+    }
+}
+
+atom Slime {
+    section property {
+        cdef render 1
+        cdef color #32DE8A
+    }
+    section definition {
+        def L <Empty, Water, Slime>
+    }
+    section update {
+        match (0, 0, 1, 2) {
+            pattern
+            x
+            _
+        }
+        -> P-0.5 {
+            pattern
+            _
+            x
+        }
+
+        match (0, 0, 2, 2) sym(x) {
+            pattern
+            x _
+            n *
+        }
+        -> P-0.08 {
             pattern
             _ x
             / /

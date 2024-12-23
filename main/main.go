@@ -195,6 +195,8 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		switch mod {
 		case glfw.ModControl:
 			newT = revIdMap["Water"]
+		case glfw.ModShift:
+			newT = revIdMap["Slime"]
 		default:
 			newT = revIdMap["Sand"]
 		}
@@ -235,6 +237,9 @@ outside:
 				ref := *atoms[name]
 
 				for ind, rule := range ref.Rules {
+					if rand.Float64() > rule.Prob {
+						continue
+					}
 					ruleApply := true
 					// s := 0
 					// if rule.XSym && rand.Intn(2) == 0 {
