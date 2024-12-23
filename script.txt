@@ -28,7 +28,7 @@ atom Sand {
 
         match (0, 0, 2, 2) sym(x) {
             pattern
-            x _
+            x L
             n L
         }
         -> {
@@ -36,6 +36,36 @@ atom Sand {
             pattern
             L /
             / x
+        }
+    }
+}
+
+atom Water {
+    section property {
+        cdef color #46B1C9
+        cdef render 1
+    }
+    section update {
+        match (0, 0, 1, 2) {
+            pattern
+            x
+            _
+        }
+        -> {
+            pattern
+            _
+            x
+        }
+
+        match (0, 0, 2, 2) sym(x) {
+            pattern
+            x _
+            n *
+        }
+        -> {
+            pattern
+            _ x
+            / /
         }
     }
 }

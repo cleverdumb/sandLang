@@ -41,6 +41,8 @@ type Rule struct {
 	Pat   []string
 	Steps []Step
 	Id    uint16
+	XSym  bool
+	YSym  bool
 }
 
 // opcode:
@@ -75,9 +77,10 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["anySpace"] = regexp.MustCompile(`\s+`)
 	reg["colorRGB"] = regexp.MustCompile(`#([A-F0-9]{2})([A-F0-9]{2})([A-F0-9]{2})`)
 	reg["splitSet"] = regexp.MustCompile(`,\s*`)
-	reg["matchStatement"] = regexp.MustCompile(`\s*match\s+\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)\s*(sym\([xy]+\))?\s*{`)
+	reg["matchStatement"] = regexp.MustCompile(`\s*match\s+\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)\s*(sym\s*\(\s*[xy]+\s*\))?\s*{`)
 	reg["spacedEqual"] = regexp.MustCompile(`\s*=\s*`)
 	reg["pickCoord"] = regexp.MustCompile(`\((\d*),\s+(\d*)\)`)
+	reg["fromSym"] = regexp.MustCompile(`sym\(([xy]*)\)`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	sections := map[string]bool{
@@ -251,6 +254,25 @@ outsideLoop:
 					newRule.Ox = int8(ox)
 					newRule.Oy = int8(oy)
 					newRule.Id = newRuleId
+
+					fmt.Println(nums[4])
+					fmt.Println(reg["fromSym"].FindStringSubmatch(nums[4]))
+					if nums[4] != "" {
+						switch reg["fromSym"].FindStringSubmatch(nums[4])[1] {
+						case "xy":
+							newRule.XSym = true
+							newRule.YSym = true
+						case "x":
+							newRule.XSym = true
+							newRule.YSym = false
+						case "y":
+							newRule.YSym = true
+							newRule.XSym = false
+						case "":
+							newRule.XSym = false
+							newRule.YSym = false
+						}
+					}
 
 					inRule = 1
 					if log {

@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"slices"
 	"sync"
+	"time"
 	"unsafe"
 
 	_ "image/png"
@@ -51,20 +52,10 @@ const (
 	scrH        = 800
 	bw          = scrW / gw
 	bh          = scrH / gh
-	threadCount = 7
+	threadCount = 1
+	symX        = 1 << 0
+	symY        = 1 << 1
 )
-
-// Vertex Data for Full-Screen Quad
-// var quadVertices = []float32{
-// 	// Positions   // Texture Coords
-// 	-1.0, 1.0, 0.0, 1.0, // Top-left
-// 	-1.0, -1.0, 0.0, 0.0, // Bottom-left
-// 	1.0, -1.0, 1.0, 0.0, // Bottom-right
-
-// 	-1.0, 1.0, 0.0, 1.0, // Top-left
-// 	1.0, -1.0, 1.0, 0.0, // Bottom-right
-// 	1.0, 1.0, 1.0, 1.0, // Top-right
-// }
 
 var quadVertices = []float32{
 	-1, 1, 0, 0,
@@ -159,8 +150,10 @@ func main() {
 
 	for yi := uint16(0); yi < gh; yi++ {
 		for xi := uint16(0); xi < gw; xi++ {
-			if yi < gh/2 {
+			if yi < gh/4 {
 				grid[yi][xi] = *makeCell(xi, yi, 1)
+			} else if yi < gh/2 {
+				grid[yi][xi] = *makeCell(xi, yi, 2)
 			} else {
 				grid[yi][xi] = *makeCell(xi, yi, 0)
 			}
@@ -168,8 +161,8 @@ func main() {
 		}
 	}
 
-	// changeType(4, 4, 1)
-	// changeType(4, 5, 1)
+	changeType(4, 4, 1)
+	changeType(4, 5, 1)
 
 	// fmt.Println(grid[4][4])
 
@@ -202,6 +195,7 @@ outside:
 			break outside
 		default:
 			rx, ry := rand.Intn(gw), rand.Intn(gh)
+			// rx, ry := 4, 4
 			zx, zy := int(rx/10), int(ry/10)
 
 			for dy := -1; dy <= 1; dy++ {
@@ -212,28 +206,49 @@ outside:
 				}
 			}
 
-			// for zones[zy][zx] {
-			// 	rx, ry = rand.Intn(gw), rand.Intn(gh)
-			// 	zx, zy = int(rx/10), int(ry/10)
-			// }
-
-			// zones[zy][zx].Lock()
-
-			// grid[ry][rx].mutex.Lock()
-			// defer grid[ry][rx].mutex.Unlock()
-			// rx, ry := 4, 4
-
 			if name, ok := idMap[grid[ry][rx].t]; ok {
 				ref := *atoms[name]
 
 				for ind, rule := range ref.Rules {
 					ruleApply := true
-					if !matchRule(ref, rx, ry, ind) {
+					// s := 0
+					// if rule.XSym && rand.Intn(2) == 0 {
+					// 	s |= symX
+					// }
+					// if rule.YSym && rand.Intn(2) == 0 {
+					// 	s |= symY
+					// }
+
+					var ox, oy int
+					s := 0
+					if !(rule.XSym && rand.Intn(2) == 0) {
+						ox = rx - int(rule.Ox)
+					} else {
+						// ox = rx + int(rule.Ox) - int(rule.W)
+						ox = rx - (int(rule.W) - int(rule.Ox) - 1)
+						s |= symX
+					}
+
+					if !(rule.YSym && rand.Intn(2) == 0) {
+						oy = ry - int(rule.Oy)
+					} else {
+						oy = ry - (int(rule.H) - int(rule.Oy) - 1)
+						s |= symY
+					}
+
+					// fmt.Println(rule.XSym, rule.YSym, rand.Intn(2))
+
+					// fmt.Printf("ox: %v, oy: %v, s: %v\n", ox, oy, s)
+
+					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
+					if !matchRule(ref, ox, oy, ind, s) {
 						ruleApply = false
 					}
 
+					// fmt.Println("ruleApply: ", ruleApply)
+
 					if ruleApply {
-						doSteps(rule, rx, ry)
+						doSteps(rule, ox, oy, s)
 					}
 
 					// fmt.Println(ind, ruleApply)
@@ -248,7 +263,7 @@ outside:
 				}
 			}
 
-			// time.Sleep(10 * time.Nanosecond)
+			time.Sleep(10 * time.Nanosecond)
 			// break outside
 		}
 	}
@@ -266,16 +281,31 @@ func changeType(x, y int, newT uint8) {
 	}
 }
 
-func matchRule(atom compile.AtomRef, rx, ry int, ruleIndex int) bool {
+func matchRule(atom compile.AtomRef, ox, oy int, ruleIndex int, s int) bool {
 	r := atom.Rules[ruleIndex]
-	ox, oy := rx-int(r.Ox), ry-int(r.Oy)
+
+	// fmt.Println(s&symX, s&symY)
+	// ox, oy := rx-int(r.Ox), ry-int(r.Oy)
 	matching := true
 
 out:
 	for dy := 0; dy < int(r.H); dy++ {
+		var ruleY int
+		if s&symY == 1 {
+			ruleY = int(r.H) - dy - 1
+		} else {
+			ruleY = dy
+		}
 		for dx := 0; dx < int(r.W); dx++ {
 			tarX, tarY := ox+dx, oy+dy
-			cellRule := r.Match[dy*int(r.W)+dx]
+			var ruleX int
+			if s&symX == 1 {
+				ruleX = int(r.W) - dx - 1
+			} else {
+				ruleX = dx
+			}
+			cellRule := r.Match[ruleY*int(r.W)+ruleX]
+			// fmt.Println(cellRule)
 			outside := false
 			if tarX < 0 || tarX >= gw || tarY < 0 || tarY >= gh {
 				outside = true
@@ -329,18 +359,32 @@ out:
 	return matching
 }
 
-func doSteps(rule compile.Rule, tx, ty int) {
+func doSteps(rule compile.Rule, ox, oy int, s int) {
+	// fmt.Println("o", ox, oy)
 	steps := rule.Steps
 	localSymbols := make(map[string]cell)
+
 	for _, step := range steps {
 		switch step.Opcode {
 		case 5:
 			sym := step.Name[0]
-			cx, cy := step.Operand[0], step.Operand[1]
-			localSymbols[sym] = grid[cy+ty-int(rule.Oy)][cx+tx-int(rule.Ox)]
+			var cx, cy int
+			if s&symX == 0 {
+				cx = step.Operand[0]
+			} else {
+				cx = int(rule.W) - int(step.Operand[0]) - 1
+			}
+
+			if s&symY == 0 {
+				cy = step.Operand[1]
+			} else {
+				cy = int(rule.H) - int(step.Operand[1]) - 1
+			}
+			localSymbols[sym] = grid[oy+cy][ox+cx]
+			// fmt.Printf("c %v, %v localSymbols %+v\n", cx, cy, localSymbols)
 		case 4:
 			// fmt.Println("APPLY", tx, ty)
-			applyPattern(rule, tx, ty, localSymbols)
+			applyPattern(rule, ox, oy, localSymbols, s)
 		}
 	}
 }
@@ -352,15 +396,49 @@ func transfer(from cell, tx, ty int) {
 	}
 }
 
-func applyPattern(rule compile.Rule, tarX, tarY int, symbols map[string]cell) {
-	tempCentre := grid[tarY][tarX]
+func applyPattern(rule compile.Rule, ox, oy int, symbols map[string]cell, s int) {
+	// fmt.Println(s)
+	var cenX, cenY int
+	if s&symX == 0 {
+		cenX = int(rule.Ox)
+	} else {
+		cenX = (int(rule.W) - int(rule.Ox) - 1)
+	}
+
+	if s&symY == 0 {
+		cenY = int(rule.Oy)
+	} else {
+		cenY = (int(rule.H) - int(rule.Oy) - 1)
+	}
+	// (int(rule.H)-int(rule.Oy)-1)
+	tempCentre := grid[oy+cenY][ox+cenX]
 	// fmt.Println(tempCentre)
-	ox, oy := tarX-int(rule.Ox), tarY-int(rule.Oy)
+	// ox, oy := tarX-int(rule.Ox), tarY-int(rule.Oy)
 	// transfer(tarX, tarY, int(rule.Ox), int(rule.Oy))
 	for dy := 0; dy < int(rule.H); dy++ {
+		var ruleY int
+		if s&symY == 1 {
+			ruleY = int(rule.H) - dy - 1
+		} else {
+			ruleY = dy
+		}
+
 		for dx := 0; dx < int(rule.W); dx++ {
 			tx, ty := ox+dx, oy+dy
-			cellRule := rule.Pat[dy*int(rule.W)+dx]
+			var ruleX int
+			if s&symX == 1 {
+				ruleX = int(rule.W) - dx - 1
+			} else {
+				ruleX = dx
+			}
+
+			// fmt.Println("rulePos", ruleX, ruleY)
+			// fmt.Printf("tempCentre %+v\n", tempCentre)
+
+			cellRule := rule.Pat[ruleY*int(rule.W)+ruleX]
+
+			// fmt.Println(cellRule, tx, ty)
+
 			switch cellRule {
 			case "/":
 				continue
