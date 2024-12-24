@@ -75,6 +75,7 @@ var texMap = make(map[uint8]uint32)
 var atoms = make(map[string]*compile.AtomRef)
 var idMap = make(map[uint8]string)
 var revIdMap = make(map[string]uint8)
+var aliasMap = make(map[string]string)
 
 var zones [gh / 10][gw / 10]sync.Mutex
 
@@ -146,6 +147,9 @@ func main() {
 		texMap[v.Id] = generateColorTexture(v.Color.R, v.Color.G, v.Color.B)
 		idMap[v.Id] = name
 		revIdMap[name] = v.Id
+		if v.Alias != "" {
+			aliasMap[v.Alias] = name
+		}
 	}
 
 	for yi := uint16(0); yi < gh; yi++ {
@@ -193,12 +197,12 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 	if button == glfw.MouseButton1 && action == glfw.Press {
 		newT := uint8(0)
 		switch mod {
-		case glfw.ModControl:
-			newT = revIdMap["Water"]
-		case glfw.ModShift:
-			newT = revIdMap["Slime"]
+		// case glfw.ModControl:
+		// 	newT = revIdMap["Test"]
+		// case glfw.ModShift:
+		// 	newT = revIdMap["Slime"]
 		default:
-			newT = revIdMap["Sand"]
+			newT = revIdMap["Test"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
@@ -373,13 +377,16 @@ out:
 				}
 			default:
 				if v, ok := atom.Def[cellRule]; ok {
-					if !slices.Contains(v, idMap[grid[tarY][tarX].t]) {
+					if !(slices.Contains(v, idMap[grid[tarY][tarX].t]) || slices.Contains(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias)) {
 						matching = false
 						break out
 					}
+				} else if a, ok := aliasMap[cellRule]; ok {
+					if idMap[grid[tarY][tarX].t] != a {
+						matching = false
+					}
 				} else {
 					matching = false
-					break out
 				}
 			}
 		}
@@ -479,6 +486,8 @@ func applyPattern(rule compile.Rule, ox, oy int, symbols map[string]cell, s int)
 			default:
 				if v, ok := symbols[cellRule]; ok {
 					transfer(v, tx, ty)
+				} else if a, ok := aliasMap[cellRule]; ok {
+					changeType(tx, ty, revIdMap[a])
 				}
 			}
 		}

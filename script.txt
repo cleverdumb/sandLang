@@ -1,110 +1,27 @@
-atom Empty {
+atom Empty alias E {
     section property {
         cdef render 0
     }
 }
 
-atom Fall {
+atom Test alias T {
     section property {
-        cdef render 0
+        cdef render 1
+        cdef color #FF0000
     }
     section definition {
-        def L <Empty, Water, Slime>
+        def P <^E>
     }
     section update {
         match (0, 0, 1, 2) {
             pattern
             x
-            L
+            E
         }
         -> {
-            def L = pick(0, 1)
-            pattern
-            L
-            x
-        }
-    }
-}
-
-atom Sand {
-    section property {
-        cdef render 1
-        cdef color #FFDDA1
-        def heat 0
-    }
-    section definition {
-        def L <Empty, Water, Slime>
-    }
-    section update {
-        inherit Fall
-
-        match (0, 0, 2, 2) sym(x) {
-            pattern
-            x L
-            n L
-        }
-        -> {
-            def L = pick(1, 1)
-            pattern
-            L /
-            / x
-        }
-    }
-}
-
-atom Water {
-    section property {
-        cdef color #46B1C9
-        cdef render 1
-    }
-    section definition {
-        def L <Empty, Water, Slime>
-    }
-    section update {
-        inherit Fall
-
-        match (0, 0, 2, 2) sym(x) {
-            pattern
-            x _
-            n *
-        }
-        -> {
-            pattern
-            _ x
-            / /
-        }
-    }
-}
-
-atom Slime {
-    section property {
-        cdef render 1
-        cdef color #32DE8A
-    }
-    section definition {
-        def L <Empty, Water, Slime>
-    }
-    section update {
-        match (0, 0, 1, 2) {
-            pattern
-            x
-            _
-        }
-        -> P-0.5 {
             pattern
             _
             x
-        }
-
-        match (0, 0, 2, 2) sym(x) {
-            pattern
-            x _
-            n *
-        }
-        -> P-0.08 {
-            pattern
-            _ x
-            / /
         }
     }
 }

@@ -23,6 +23,7 @@ type AtomRef struct {
 	ConstProp map[string]float32
 	Def       map[string][]string
 	Rules     []Rule
+	Alias     string
 }
 
 type Color struct {
@@ -73,11 +74,11 @@ func CompileScript(log bool) map[string]*AtomRef {
 		panic(err)
 	}
 	reg := make(map[string]*regexp.Regexp)
-	reg["atom"] = regexp.MustCompile(`\s*atom\s+([A-Za-z0-9]+)\s*{`)
+	reg["atom"] = regexp.MustCompile(`\s*atom\s+([A-Za-z0-9]+)\s*(alias\s([A-Za-z0-9]+))?\s*{`)
 	reg["sectionName"] = regexp.MustCompile(`\s*section\s*([a-z]+)\s+{`)
 	reg["anySpace"] = regexp.MustCompile(`\s+`)
 	reg["colorRGB"] = regexp.MustCompile(`#([A-F0-9]{2})([A-F0-9]{2})([A-F0-9]{2})`)
-	reg["splitSet"] = regexp.MustCompile(`,\s*`)
+	reg["splitSet"] = regexp.MustCompile(`\s*,\s*`)
 	reg["matchStatement"] = regexp.MustCompile(`\s*match\s+\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)\s*(sym\s*\(\s*[xy]+\s*\))?\s*{`)
 	reg["spacedEqual"] = regexp.MustCompile(`\s*=\s*`)
 	reg["pickCoord"] = regexp.MustCompile(`\((\d*),\s+(\d*)\)`)
@@ -111,8 +112,14 @@ outsideLoop:
 			continue outsideLoop
 
 		case strings.HasPrefix(l, "atom"):
-			name := reg["atom"].FindStringSubmatch(l)[1]
+			matched := reg["atom"].FindStringSubmatch(l)
+			name := matched[1]
 			Atoms[name] = &AtomRef{Id: uint8(currAtomId), Prop: make(map[string]float32), ConstProp: make(map[string]float32), Def: make(map[string][]string)}
+			if len(matched) >= 4 && matched[3] != "" {
+				Atoms[name].Alias = matched[3]
+			} else {
+				Atoms[name].Alias = ""
+			}
 			currentAtom = name
 			inAtomDeclaration = true
 			if log {
