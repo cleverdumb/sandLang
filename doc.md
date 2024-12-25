@@ -1,10 +1,11 @@
-*In this guide's code blocks, `keyword`, `[replace inside]`, `(Optional)?`*
+*In this guide's code blocks, `keyword`, `[replace inside]`, `(Optional)?`*\
 **All blocks are opened by `{` and closed with `}`**
 
 Comments start with `//` they are single lined and skipped entirely
+
 **There must always be a `Empty` element**
 
-`atom` starts an atom declaration with this syntax
+`atom` starts an atom declaration with this syntax\
 `atom [name] (alias [Symbol])? [Block]`
 
 Example:
