@@ -98,6 +98,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	inPattern := false
 	patternLineCount := 0
 	newRule := Rule{}
+	globalSets := make(map[string][]string)
 outsideLoop:
 	for lineNum, l := range strings.Split(string(f), "\n") {
 		l = strings.TrimSpace(l)
@@ -111,6 +112,16 @@ outsideLoop:
 		case strings.HasPrefix(l, "//"):
 			continue outsideLoop
 
+		case strings.HasPrefix(l, "global"):
+			split := reg["anySpace"].Split(l, -1)
+			sym, set := split[1], strings.Join(split[2:], " ")
+			comps := reg["splitSet"].Split(set[1:len(set)-1], -1)
+			globalSets[sym] = comps
+			fmt.Println(globalSets)
+			if log {
+				fmt.Printf("%v Set global set %v to %v\n", lineNum, sym, comps)
+			}
+
 		case strings.HasPrefix(l, "atom"):
 			matched := reg["atom"].FindStringSubmatch(l)
 			name := matched[1]
@@ -122,6 +133,9 @@ outsideLoop:
 			}
 			currentAtom = name
 			inAtomDeclaration = true
+			for sym, a := range globalSets {
+				Atoms[currentAtom].Def[sym] = a
+			}
 			if log {
 				fmt.Println(lineNum, "Start of atom dec:", name, currAtomId)
 			}

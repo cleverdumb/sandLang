@@ -1,22 +1,21 @@
+global L <Empty, Sand>
+
 atom Empty alias E {
     section property {
         cdef render 0
     }
 }
 
-atom Test alias T {
+atom Sand {
     section property {
         cdef render 1
-        cdef color #FF0000
-    }
-    section definition {
-        def P <^E>
+        cdef color #FFFF00
     }
     section update {
         match (0, 0, 1, 2) {
             pattern
             x
-            E
+            L
         }
         -> {
             pattern

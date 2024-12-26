@@ -48,6 +48,9 @@ Rules in sandlang works in the following way:
 2) For each chosen square, all the rules of the atom type is checked in order, centred on the atom based on position of origin property
 3) Each square of the *match rule* is then checked. If all of them matches the corresponding square, then the *result rule* is executed
 
+Rules can be copied from other atoms with `inherit [name]`\
+All rules of the atom will be copied, including ones that they inherited from others
+
 A rule have a couple properties:
 - Width and height: How big the rule is - **Do not make it over 10 blocks in each direction**
 - Posiiton of origin: The coordinate of the atom that the rule centres on (Described more below)
@@ -70,8 +73,7 @@ An update block is defined in this way:\
 Each line in the update block corresponds to a step of one of these:
 1) Defining a symbol to be a cell at a certain position, at the time of execution of this command - `def [symbol] = pick([x], [y])` eg `def L = pick(1, 1)` defines `L` to be the cell at `(1, 1)`
 2) Mapping onto pattern - `pattern` followed by the *pattern*
-
-
+ 
 
 ### Patterns
 Each line of the pattern correspond to a row of cells, and each cell in the row must be seperated by any amount of spaces
@@ -91,6 +93,9 @@ In a pattern used to map:\
 `[alias]` map to the type of the element
 
 Non-static properties are copied with default values to the new cell
+
+### Other features
+- Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`
 
 ### Examples
 #### Sand

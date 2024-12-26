@@ -202,7 +202,7 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// case glfw.ModShift:
 		// 	newT = revIdMap["Slime"]
 		default:
-			newT = revIdMap["Test"]
+			newT = revIdMap["Sand"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
