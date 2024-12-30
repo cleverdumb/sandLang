@@ -6,21 +6,106 @@ atom Empty alias E {
     }
 }
 
-atom Sand {
+atom Dirt alias D {
     section property {
         cdef render 1
-        cdef color #FFFF00
+        cdef color #A98743
+        cdef lifetime 100
+    }
+}
+
+atom Plant alias P {
+    section property {
+        cdef render 1
+        cdef color #17301C
+        def lifetime 0
+        cdef limit 50
+    }
+    section definition {
+        def B <^P>
+    }
+    section update {
+        match (1, 1, 2, 3) sym(x) {
+            eval [lifetime-1, 1] <= [limit]
+            pattern
+            _ *
+            * x
+            * B
+        }
+        -> {
+            pattern
+            P /
+            / x
+            / /
+            set [lifetime-0, 0] = [lifetime-1, 1] + 1
+            set [lifetime-1, 1] = [lifetime-0, 0]
+        }
+
+        match (1, 1, 3, 3) sym(x) {
+            eval [lifetime-1, 1] <= [limit]
+            pattern
+            _ * *
+            * x *
+            * * B
+        }
+        -> {
+            pattern
+            P / /
+            / x /
+            / / /
+            set [lifetime-0, 0] = [lifetime-1, 1] + 1
+            set [lifetime-1, 1] = [lifetime-0, 0]
+        }
+
+        match (1, 1, 2, 3) sym(x) {
+            eval [lifetime-1, 1] <= [limit]
+            pattern
+            _ *
+            * x
+            B *
+        }
+        -> {
+            pattern
+            P /
+            / x
+            / /
+            set [lifetime-0, 0] = [lifetime-1, 1] + 1
+            set [lifetime-1, 1] = [lifetime-0, 0]
+        }
+    }
+}
+
+atom Seed {
+    section property {
+        cdef render 1
+        cdef color #804000
+    }
+    section definition {
+        def B <^P, ^D>
     }
     section update {
         match (0, 0, 1, 2) {
             pattern
             x
-            L
+            E
         }
         -> {
             pattern
+            E
+            x
+        }
+
+        match (0, 0, 1, 3) {
+            pattern
             _
             x
+            B
+        }
+        -> {
+            pattern
+            P
+            P
+            B
         }
     }
 }

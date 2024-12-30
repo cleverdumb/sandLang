@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -16,6 +17,7 @@ import (
 	"example.com/compile"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/vjeantet/govaluate"
 )
 
 // Vertex Shader
@@ -46,8 +48,8 @@ void main() {
 ` + "\x00"
 
 const (
-	gw          = 200
-	gh          = 200
+	gw          = 100
+	gh          = 100
 	scrW        = 800
 	scrH        = 800
 	bw          = scrW / gw
@@ -154,18 +156,18 @@ func main() {
 
 	for yi := uint16(0); yi < gh; yi++ {
 		for xi := uint16(0); xi < gw; xi++ {
-			// if yi < gh/4 {
-			// 	grid[yi][xi] = *makeCell(xi, yi, 1)
-			// } else if yi < gh/2 {
-			// 	grid[yi][xi] = *makeCell(xi, yi, 2)
-			// } else {
+			if yi < gh-1 {
+				grid[yi][xi] = *makeCell(xi, yi, revIdMap["Empty"])
+			} else {
+				grid[yi][xi] = *makeCell(xi, yi, revIdMap["Dirt"])
+			}
 			// 	grid[yi][xi] = *makeCell(xi, yi, 0)
 			// }
-			grid[yi][xi] = *makeCell(xi, yi, 0)
+			// grid[yi][xi] = *makeCell(xi, yi, 0)
 		}
 	}
 
-	// changeType(4, 4, 1)
+	changeType(int(gw/2), 1, revIdMap["Seed"])
 	// changeType(4, 5, 1)
 
 	// fmt.Println(grid[4][4])
@@ -193,6 +195,8 @@ func main() {
 	quitCh <- 1
 }
 
+// var testUpdateX, testUpdateY int
+
 func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	if button == glfw.MouseButton1 && action == glfw.Press {
 		newT := uint8(0)
@@ -202,12 +206,19 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// case glfw.ModShift:
 		// 	newT = revIdMap["Slime"]
 		default:
-			newT = revIdMap["Sand"]
+			newT = revIdMap["Seed"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
-		for y := -10; y <= 10; y++ {
-			for x := -10; x <= 10; x++ {
+
+		// testUpdateX = boxX
+		// testUpdateY = boxY
+
+		fmt.Printf("Cell %+v\n", grid[boxY][boxX])
+		// for y := -10; y <= 10; y++ {
+		// 	for x := -10; x <= 10; x++ {
+		for y := 0; y < 1; y++ {
+			for x := 0; x < 1; x++ {
 				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
 					if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
 						changeType(boxX+x, boxY+y, newT)
@@ -225,7 +236,15 @@ outside:
 		case <-quit:
 			break outside
 		default:
-			rx, ry := rand.Intn(gw), rand.Intn(gh)
+			// s := time.Now()
+			var rx, ry int
+			// if testUpdateX == -1 {
+			rx, ry = rand.Intn(gw), rand.Intn(gh)
+			// continue outside
+			// } else {
+			// 	rx, ry = testUpdateX, testUpdateY
+			// 	testUpdateX, testUpdateY = -1, -1
+			// }
 			// rx, ry := 4, 4
 			zx, zy := int(rx/10), int(ry/10)
 
@@ -277,12 +296,33 @@ outside:
 					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
 					if !matchRule(ref, ox, oy, ind, s) {
 						ruleApply = false
+						continue
+					}
+
+					// fmt.Println(ref.ConstProp)
+
+					for _, con := range rule.MatchCon {
+						res := evaluateMath(con.Expr, con.Names, s, rx, ry)
+
+						// fmt.Println(res)
+
+						if res == false {
+							ruleApply = false
+							break
+						}
+					}
+
+					if !ruleApply {
+						continue
 					}
 
 					// fmt.Println("ruleApply: ", ruleApply)
 
 					if ruleApply {
-						doSteps(rule, ox, oy, s)
+						doSteps(rule, ox, oy, s, rx, ry)
+						// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
+						// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
+						// }
 					}
 
 					// fmt.Println(ind, ruleApply)
@@ -296,8 +336,9 @@ outside:
 					}
 				}
 			}
+			// fmt.Println(time.Since(s))
 
-			time.Sleep(10 * time.Nanosecond)
+			time.Sleep(20 * time.Microsecond)
 			// break outside
 		}
 	}
@@ -394,34 +435,74 @@ out:
 	return matching
 }
 
-func doSteps(rule compile.Rule, ox, oy int, s int) {
+func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 	// fmt.Println("o", ox, oy)
 	steps := rule.Steps
 	localSymbols := make(map[string]cell)
 
 	for _, step := range steps {
-		switch step.Opcode {
-		case 5:
-			sym := step.Name[0]
-			var cx, cy int
+		var cx, cy int
+		if step.Opcode == 5 || step.Opcode == 1 {
 			if s&symX == 0 {
-				cx = step.Operand[0]
+				cx = int(step.Operand[0])
 			} else {
 				cx = int(rule.W) - int(step.Operand[0]) - 1
 			}
 
 			if s&symY == 0 {
-				cy = step.Operand[1]
+				cy = int(step.Operand[1])
 			} else {
 				cy = int(rule.H) - int(step.Operand[1]) - 1
 			}
+		}
+		switch step.Opcode {
+		case 5:
+			sym := step.Name[0]
 			localSymbols[sym] = grid[oy+cy][ox+cx]
 			// fmt.Printf("c %v, %v localSymbols %+v\n", cx, cy, localSymbols)
 		case 4:
 			// fmt.Println("APPLY", tx, ty)
 			applyPattern(rule, ox, oy, localSymbols, s)
+		case 1:
+			name := strings.Split(step.Name[0], "-")[0]
+			// nx, ny := step.Operand[0], step.Operand[1]
+			val := evaluateMath(step.Eval, step.Vars, s, rx, ry)
+			// fmt.Println(val)
+			// fmt.Println(ox+cx, oy+cy, "cxy", cx, cy)
+			grid[ry+int(step.Operand[1])*(1-(s&symY)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = float32(val.(float64))
 		}
 	}
+}
+
+func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int, s int, rx, ry int) interface{} {
+	// ox, oy absolute position of symbol x
+	param := make(map[string]interface{})
+	inc := make(map[string]int)
+	// fmt.Println("vars", vars)
+	for n, l := range vars {
+		tx, ty := rx, ry
+		// if !(l[inc[n]][0] == -1 && l[inc[n]][1] == -1) {
+		tx += l[inc[n]][0] * -((s&symX)*2 - 1)
+		ty += l[inc[n]][1] * -((s&symY)*2 - 1)
+		// }
+		if tx < 0 || ty < 0 || tx >= gw || ty >= gh {
+			return false
+		}
+		name := strings.Split(n, "-")[0]
+		// fmt.Println("name", name, "txy", tx, ty, "rxy", rx, ry, n, grid[ty][tx], "expr", expr)
+		// fmt.Println("l", l)
+		if v, ok := grid[ty][tx].prop[name]; ok {
+			param[n] = float64(v)
+		} else if v, ok := atoms[idMap[grid[ty][tx].t]].ConstProp[name]; ok {
+			param[n] = float64(v)
+		}
+	}
+	// fmt.Println("param", param)
+	res, err := expr.Evaluate(param)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 func transfer(from cell, tx, ty int) {

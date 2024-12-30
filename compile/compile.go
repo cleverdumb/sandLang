@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/vjeantet/govaluate"
 )
 
 func checkErr(e error) {
@@ -33,22 +35,22 @@ type Color struct {
 }
 
 type Rule struct {
-	W     uint8
-	H     uint8
-	Ox    int8
-	Oy    int8
-	Match []string
-	// matchCon []Condition
-	Pat   []string
-	Steps []Step
-	Id    uint16
-	XSym  bool
-	YSym  bool
-	Prob  float64
+	W        uint8
+	H        uint8
+	Ox       int8
+	Oy       int8
+	Match    []string
+	MatchCon []Condition
+	Pat      []string
+	Steps    []Step
+	Id       uint16
+	XSym     bool
+	YSym     bool
+	Prob     float64
 }
 
 // opcode:
-// 0 - set [name[0]] to [0]
+// 0 - set
 // 1 - change [name[0]] by [0]
 // 2 - clamp [name[0]] into [0] and [1] ([0] < [1])
 // 3 - randomise [name[0]] between [0] and [1] ([0] < [1]), steps [2]
@@ -58,14 +60,17 @@ type Rule struct {
 type Step struct {
 	Opcode  uint8
 	Name    []string
-	Operand []int
+	Operand []float64
+	Eval    *govaluate.EvaluableExpression
+	Vars    map[string][][2]int
 }
 
-// type Condition struct {
-// 	opcode  uint8
-// 	name    string
-// 	operand []int
-// }
+type Condition struct {
+	Names map[string][][2]int
+	Expr  *govaluate.EvaluableExpression
+}
+
+var reg = make(map[string]*regexp.Regexp)
 
 func CompileScript(log bool) map[string]*AtomRef {
 	currAtomId := 0
@@ -73,7 +78,6 @@ func CompileScript(log bool) map[string]*AtomRef {
 	if err != nil {
 		panic(err)
 	}
-	reg := make(map[string]*regexp.Regexp)
 	reg["atom"] = regexp.MustCompile(`\s*atom\s+([A-Za-z0-9]+)\s*(alias\s([A-Za-z0-9]+))?\s*{`)
 	reg["sectionName"] = regexp.MustCompile(`\s*section\s*([a-z]+)\s+{`)
 	reg["anySpace"] = regexp.MustCompile(`\s+`)
@@ -85,6 +89,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["fromSym"] = regexp.MustCompile(`sym\(([xy]*)\)`)
 	reg["fromArrow"] = regexp.MustCompile(`->\s*(P\s*-\s*([\d\.]*))?\s*{`)
 	reg["fromInherit"] = regexp.MustCompile(`inherit\s*(.*)`)
+	reg["getEvalBracket"] = regexp.MustCompile(`\[([a-zA-Z0-9]*\s*(-\s*([0-9]+)\s*,\s*([0-9]+)\s*)?)\]`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	sections := map[string]bool{
@@ -117,7 +122,6 @@ outsideLoop:
 			sym, set := split[1], strings.Join(split[2:], " ")
 			comps := reg["splitSet"].Split(set[1:len(set)-1], -1)
 			globalSets[sym] = comps
-			fmt.Println(globalSets)
 			if log {
 				fmt.Printf("%v Set global set %v to %v\n", lineNum, sym, comps)
 			}
@@ -334,6 +338,21 @@ outsideLoop:
 				}
 			}
 
+			if inRule == 1 {
+				if strings.HasPrefix(l, "eval ") {
+					expr := l[5:]
+					// expr := "x + y"
+					vars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy))
+					// // fmt.Println(vars)
+					// eval, err := govaluate.NewEvaluableExpression(expr)
+					if err != nil {
+						panic(err)
+					}
+
+					newRule.MatchCon = append(newRule.MatchCon, Condition{Names: vars, Expr: eval})
+				}
+			}
+
 			if inRule == 2 {
 				if strings.HasPrefix(l, "def") {
 					split := reg["spacedEqual"].Split(l, 2)
@@ -343,10 +362,31 @@ outsideLoop:
 
 					y, err := strconv.ParseInt(val[1], 10, 8)
 					checkErr(err)
-					newRule.Steps = append(newRule.Steps, Step{Opcode: 5, Name: []string{sym}, Operand: []int{int(x), int(y)}})
+					newRule.Steps = append(newRule.Steps, Step{Opcode: 5, Name: []string{sym}, Operand: []float64{float64(x), float64(y)}})
 					if log {
 						fmt.Printf("%v Added step to define %v at coord (%v, %v)\n", lineNum, sym, x, y)
 					}
+				} else if strings.HasPrefix(l, "set") {
+					split := reg["spacedEqual"].Split(l, -1)
+					n := strings.TrimSpace(split[0][4:])
+					splitn := reg["getEvalBracket"].FindStringSubmatch(n)[1:]
+					var operand []float64
+					if len(splitn) > 3 && splitn[2] != "" {
+						ox, err := strconv.Atoi(splitn[2])
+						checkErr(err)
+
+						oy, err := strconv.Atoi(splitn[3])
+						checkErr(err)
+
+						operand = []float64{float64(ox) - float64(newRule.Ox), float64(oy) - float64(newRule.Oy)}
+						// fmt.Println("operand", operand, "n", n)
+					} else {
+						operand = []float64{0, 0}
+					}
+					expr := split[1]
+					vars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy))
+
+					newRule.Steps = append(newRule.Steps, Step{Opcode: 1, Name: []string{n[1 : len(n)-1]}, Eval: eval, Vars: vars, Operand: operand})
 				}
 			}
 		}
@@ -365,6 +405,30 @@ outsideLoop:
 func LogAtoms(atoms map[string]*AtomRef) {
 	for k, v := range atoms {
 		fmt.Print(k)
-		fmt.Printf("%+v\n", *v)
+		fmt.Printf("%+v\n\n", *v)
 	}
+}
+
+func compileMath(expr string, ox, oy int) (map[string][][2]int, *govaluate.EvaluableExpression) {
+	possibleVars := reg["getEvalBracket"].FindAllStringSubmatch(expr, -1)
+	vars := make(map[string][][2]int)
+	for _, match := range possibleVars {
+		if len(match) > 3 && match[3] != "" {
+			i3, err := strconv.Atoi(match[3])
+			checkErr(err)
+			i4, err := strconv.Atoi(match[4])
+			checkErr(err)
+
+			vars[match[1]] = append(vars[match[1]], [2]int{i3 - ox, i4 - oy})
+		} else {
+			vars[match[1]] = append(vars[match[1]], [2]int{0, 0})
+		}
+	}
+
+	eval, err := govaluate.NewEvaluableExpression(expr)
+	if err != nil {
+		panic(err)
+	}
+
+	return vars, eval
 }

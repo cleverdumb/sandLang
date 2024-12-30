@@ -24,7 +24,8 @@ There are three optional sections in an atom declaration
    - Where you can define properties of the atom
    - All properties have type of a float64 (or color if name is `color`)
    - Define **static** properties with `cdef [name] value`\
-    These are shared by all atom of the element
+    These are shared by all atom of the element\
+    These stay constant due to risk of race conditions
    - Define **non-static** property with `def [name] value`\
     Each atom gets an individual copy of the property\
     Keep these to a minimum to reduce memory usage
@@ -33,7 +34,7 @@ There are three optional sections in an atom declaration
      - `render` - not optional 0 = invisible, 1 = visible
 2) **Definition - Made with `section definition [block]`**
    - Where you define sets for use in rules
-   - Syntax: `def symbol <Name1, Name2, ...>`
+   - Syntax: `def [symbol] <Name1, Name2, ...>`
    - eg `def F <Empty, Water, Gas>` makes a set of those 3 atoms and referenced with `F`
    - Names in sets can be replaced by an alias. To signify that it is an alias, you must precede it with `^` eg `^S` instead of `Sand`
    - Definitions in this section are **local** - therefore can only be used in this atom
