@@ -167,7 +167,7 @@ func main() {
 		}
 	}
 
-	changeType(int(gw/2), 1, revIdMap["Seed"])
+	// changeType(int(gw/2), 1, revIdMap["Seed"])
 	// changeType(4, 5, 1)
 
 	// fmt.Println(grid[4][4])
@@ -206,7 +206,7 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// case glfw.ModShift:
 		// 	newT = revIdMap["Slime"]
 		default:
-			newT = revIdMap["Seed"]
+			newT = revIdMap["Gas"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
@@ -215,10 +215,10 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// testUpdateY = boxY
 
 		// fmt.Printf("Cell %+v\n", grid[boxY][boxX])
-		// for y := -10; y <= 10; y++ {
-		// 	for x := -10; x <= 10; x++ {
-		for y := 0; y < 1; y++ {
-			for x := 0; x < 1; x++ {
+		for y := -5; y <= 5; y++ {
+			for x := -5; x <= 5; x++ {
+				// for y := 0; y < 1; y++ {
+				// 	for x := 0; x < 1; x++ {
 				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
 					if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
 						changeType(boxX+x, boxY+y, newT)
@@ -240,10 +240,10 @@ outside:
 			var rx, ry int
 			// if testUpdateX == -1 {
 			rx, ry = rand.Intn(gw), rand.Intn(gh)
-			// continue outside
+			// 	continue outside
 			// } else {
-			// 	rx, ry = testUpdateX, testUpdateY
-			// 	testUpdateX, testUpdateY = -1, -1
+			// rx, ry = testUpdateX, testUpdateY
+			// testUpdateX, testUpdateY = -1, -1
 			// }
 			// rx, ry := 4, 4
 			zx, zy := int(rx/10), int(ry/10)
@@ -259,7 +259,10 @@ outside:
 			if name, ok := idMap[grid[ry][rx].t]; ok {
 				ref := *atoms[name]
 
-				for ind, rule := range ref.Rules {
+				for _, v := range rand.Perm(len(ref.Rules)) {
+					ind := v
+					rule := ref.Rules[v]
+					// for ind, rule := range ref.Rules {
 					if rand.Float64() > rule.Prob {
 						continue
 					}
@@ -285,6 +288,7 @@ outside:
 					if !(rule.YSym && rand.Intn(2) == 0) {
 						oy = ry - int(rule.Oy)
 					} else {
+						// fmt.Println("YSym")
 						oy = ry - (int(rule.H) - int(rule.Oy) - 1)
 						s |= symY
 					}
@@ -316,17 +320,18 @@ outside:
 						continue
 					}
 
-					// fmt.Println("ruleApply: ", ruleApply)
+					// fmt.Println("ruleApply:", ruleApply)
 
 					if ruleApply {
+						// fmt.Println(ind)
 						doSteps(rule, ox, oy, s, rx, ry)
 						// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
 						// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
 						// }
 					}
-
-					// fmt.Println(ind, ruleApply)
 				}
+				// fmt.Println(ind, ruleApply)
+				// }
 			}
 
 			for dy := -1; dy <= 1; dy++ {
@@ -338,7 +343,7 @@ outside:
 			}
 			// fmt.Println(time.Since(s))
 
-			time.Sleep(20 * time.Microsecond)
+			time.Sleep(2 * time.Microsecond)
 			// break outside
 		}
 	}
@@ -364,7 +369,7 @@ func matchRule(atom compile.AtomRef, ox, oy int, ruleIndex int, s int) bool {
 out:
 	for dy := 0; dy < int(r.H); dy++ {
 		var ruleY int
-		if s&symY == 1 {
+		if s&symY == symY {
 			ruleY = int(r.H) - dy - 1
 		} else {
 			ruleY = dy
@@ -469,7 +474,7 @@ func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 			val := evaluateMath(step.Eval, step.Vars, s, rx, ry)
 			// fmt.Println(val)
 			// fmt.Println(ox+cx, oy+cy, "cxy", cx, cy)
-			grid[ry+int(step.Operand[1])*(1-(s&symY)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = float32(val.(float64))
+			grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = float32(val.(float64))
 		}
 	}
 }
@@ -483,7 +488,7 @@ func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int,
 		tx, ty := rx, ry
 		// if !(l[inc[n]][0] == -1 && l[inc[n]][1] == -1) {
 		tx += l[inc[n]][0] * -((s&symX)*2 - 1)
-		ty += l[inc[n]][1] * -((s&symY)*2 - 1)
+		ty += l[inc[n]][1] * -(((s&symY)>>1)*2 - 1)
 		// }
 		if tx < 0 || ty < 0 || tx >= gw || ty >= gh {
 			return false
@@ -513,7 +518,7 @@ func transfer(from cell, tx, ty int) {
 }
 
 func applyPattern(rule compile.Rule, ox, oy int, symbols map[string]cell, s int) {
-	// fmt.Println(s)
+	// fmt.Println("s", s)
 	var cenX, cenY int
 	if s&symX == 0 {
 		cenX = int(rule.Ox)
@@ -533,7 +538,9 @@ func applyPattern(rule compile.Rule, ox, oy int, symbols map[string]cell, s int)
 	// transfer(tarX, tarY, int(rule.Ox), int(rule.Oy))
 	for dy := 0; dy < int(rule.H); dy++ {
 		var ruleY int
-		if s&symY == 1 {
+		// fmt.Println(s & symY)
+		if s&symY == symY {
+			// fmt.Println("Marker")
 			ruleY = int(rule.H) - dy - 1
 		} else {
 			ruleY = dy

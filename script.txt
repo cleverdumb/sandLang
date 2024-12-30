@@ -1,4 +1,4 @@
-global L <Empty, Sand>
+global M <^E, ^G>
 
 atom Empty alias E {
     section property {
@@ -6,106 +6,41 @@ atom Empty alias E {
     }
 }
 
-atom Dirt alias D {
+atom RandomMovement {
     section property {
-        cdef render 1
-        cdef color #A98743
-        cdef lifetime 100
-    }
-}
-
-atom Plant alias P {
-    section property {
-        cdef render 1
-        cdef color #17301C
-        def lifetime 0
-        cdef limit 50
-    }
-    section definition {
-        def B <^P>
+        cdef render 0
     }
     section update {
-        match (1, 1, 2, 3) sym(x) {
-            eval [lifetime] <= [limit]
+        match (0, 0, 2, 1) sym(x) {
             pattern
-            _ *
-            * x
-            * B
+            x M
         }
         -> {
+            def P = pick(1, 0)
             pattern
-            P /
-            / x
-            / /
-            set [lifetime-0, 0] = [lifetime] + 1
-            set [lifetime] = [lifetime-0, 0]
+            P x
         }
 
-        match (1, 1, 3, 3) sym(x) {
-            eval [lifetime] <= [limit]
+        match (0, 0, 1, 2) sym(y) {
             pattern
-            _ * *
-            * x *
-            * * B
+            x
+            M
         }
         -> {
+            def P = pick(0, 1)
             pattern
-            P / /
-            / x /
-            / / /
-            set [lifetime-0, 0] = [lifetime] + 1
-            set [lifetime] = [lifetime-0, 0]
-        }
-
-        match (1, 1, 2, 3) sym(x) {
-            eval [lifetime] <= [limit]
-            pattern
-            _ *
-            * x
-            B *
-        }
-        -> {
-            pattern
-            P /
-            / x
-            / /
-            set [lifetime-0, 0] = [lifetime] + 1
-            set [lifetime] = [lifetime-0, 0]
+            P
+            x
         }
     }
 }
 
-atom Seed {
+atom Gas alias G {
     section property {
         cdef render 1
-        cdef color #804000
-    }
-    section definition {
-        def B <^P, ^D>
+        cdef color #0000FF
     }
     section update {
-        match (0, 0, 1, 2) {
-            pattern
-            x
-            E
-        }
-        -> {
-            pattern
-            E
-            x
-        }
-
-        match (0, 0, 1, 3) {
-            pattern
-            _
-            x
-            B
-        }
-        -> {
-            pattern
-            P
-            P
-            B
-        }
+        inherit RandomMovement
     }
 }
