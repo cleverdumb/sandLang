@@ -47,7 +47,7 @@ There are three optional sections in an atom declaration
 Rules in sandlang works in the following way:
 1) In parallel the simulator chooses multiple squares at random
 2) For each chosen square, all the rules of the atom type is checked in order, centred on the atom based on position of origin property
-3) Each square of the *match rule* is then checked. If all of them matches the corresponding square, then the *result rule* is executed
+3) Each square of the *match rule* is then checked. Each condition of the match block is also checked. If all of them matches the corresponding square, then the *result rule* is executed
 
 Rules can be copied from other atoms with `inherit [name]`\
 All rules of the atom will be copied, including ones that they inherited from others
@@ -67,6 +67,8 @@ Symmetry is defined with `sym([x or y or xy])`
 
 Each line in the block defines a condition that must be satisfied, except `pattern`, which matches the *pattern* that comes in the next few lines
 
+A condition can also be an `eval` which precedes a *Maths statement*. If all conditions evaluates to true, only then the update block is executed
+
 #### Update
 All match must have an update\
 An update block is defined in this way:\
@@ -74,7 +76,7 @@ An update block is defined in this way:\
 Each line in the update block corresponds to a step of one of these:
 1) Defining a symbol to be a cell at a certain position, at the time of execution of this command - `def [symbol] = pick([x], [y])` eg `def L = pick(1, 1)` defines `L` to be the cell at `(1, 1)`
 2) Mapping onto pattern - `pattern` followed by the *pattern*
- 
+3) Setting a non-static property - `set [property] [Maths statement]`
 
 ### Patterns
 Each line of the pattern correspond to a row of cells, and each cell in the row must be seperated by any amount of spaces
@@ -94,6 +96,15 @@ In a pattern used to map:\
 `[alias]` map to the type of the element
 
 Non-static properties are copied with default values to the new cell
+
+### Maths statements and Properties
+Properties are referenced in a rule in square brackets `[]` in which `[name](-[x], [y])?`\
+The `x` and `y` coords corresponds to canvas coordinate of the block referenced in the rule\
+The coordinate can be ignored. That way by default it would be the coordinate of the centre block `x` 
+
+Static properties are referenced in the same way, taking the property of the type of atom at the coordinate
+
+In a *maths statement* you can use the normal `+ - * / %` and `== <= >= < >` and brackets
 
 ### Other features
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`

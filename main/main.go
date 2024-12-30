@@ -214,7 +214,7 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// testUpdateX = boxX
 		// testUpdateY = boxY
 
-		fmt.Printf("Cell %+v\n", grid[boxY][boxX])
+		// fmt.Printf("Cell %+v\n", grid[boxY][boxX])
 		// for y := -10; y <= 10; y++ {
 		// 	for x := -10; x <= 10; x++ {
 		for y := 0; y < 1; y++ {

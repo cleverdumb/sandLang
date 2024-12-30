@@ -26,7 +26,7 @@ atom Plant alias P {
     }
     section update {
         match (1, 1, 2, 3) sym(x) {
-            eval [lifetime-1, 1] <= [limit]
+            eval [lifetime] <= [limit]
             pattern
             _ *
             * x
@@ -37,12 +37,12 @@ atom Plant alias P {
             P /
             / x
             / /
-            set [lifetime-0, 0] = [lifetime-1, 1] + 1
-            set [lifetime-1, 1] = [lifetime-0, 0]
+            set [lifetime-0, 0] = [lifetime] + 1
+            set [lifetime] = [lifetime-0, 0]
         }
 
         match (1, 1, 3, 3) sym(x) {
-            eval [lifetime-1, 1] <= [limit]
+            eval [lifetime] <= [limit]
             pattern
             _ * *
             * x *
@@ -53,12 +53,12 @@ atom Plant alias P {
             P / /
             / x /
             / / /
-            set [lifetime-0, 0] = [lifetime-1, 1] + 1
-            set [lifetime-1, 1] = [lifetime-0, 0]
+            set [lifetime-0, 0] = [lifetime] + 1
+            set [lifetime] = [lifetime-0, 0]
         }
 
         match (1, 1, 2, 3) sym(x) {
-            eval [lifetime-1, 1] <= [limit]
+            eval [lifetime] <= [limit]
             pattern
             _ *
             * x
@@ -69,8 +69,8 @@ atom Plant alias P {
             P /
             / x
             / /
-            set [lifetime-0, 0] = [lifetime-1, 1] + 1
-            set [lifetime-1, 1] = [lifetime-0, 0]
+            set [lifetime-0, 0] = [lifetime] + 1
+            set [lifetime] = [lifetime-0, 0]
         }
     }
 }
