@@ -118,7 +118,7 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
 	// Create GLFW Window
-	window, err := glfw.CreateWindow(800, 800, "Clear Screen with Texture", nil, nil)
+	window, err := glfw.CreateWindow(scrW, scrH, "Sandlang", nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -268,7 +268,11 @@ outside:
 					rule := ref.Rules[ind]
 					// for ind, rule := range ref.Rules {
 					if rand.Float64() > rule.Prob {
-						break
+						if !rule.DontBreak {
+							break
+						} else {
+							continue
+						}
 					}
 					ruleApply := true
 					// s := 0
@@ -304,7 +308,11 @@ outside:
 					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
 					if !matchRule(ref, ox, oy, ind, s) {
 						ruleApply = false
-						break
+						if !rule.DontBreak {
+							break
+						} else {
+							continue
+						}
 					}
 
 					// fmt.Println(ref.ConstProp)
@@ -321,7 +329,11 @@ outside:
 					}
 
 					if !ruleApply {
-						break
+						if !rule.DontBreak {
+							break
+						} else {
+							continue
+						}
 					}
 
 					// fmt.Println("ruleApply:", ruleApply)
@@ -334,7 +346,9 @@ outside:
 						// }
 					}
 
-					break
+					if !rule.DontBreak {
+						break
+					}
 				}
 				// fmt.Println(ind, ruleApply)
 				// }

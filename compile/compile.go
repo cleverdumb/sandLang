@@ -35,18 +35,19 @@ type Color struct {
 }
 
 type Rule struct {
-	W        uint8
-	H        uint8
-	Ox       int8
-	Oy       int8
-	Match    []string
-	MatchCon []Condition
-	Pat      []string
-	Steps    []Step
-	Id       uint16
-	XSym     bool
-	YSym     bool
-	Prob     float64
+	W         uint8
+	H         uint8
+	Ox        int8
+	Oy        int8
+	Match     []string
+	MatchCon  []Condition
+	Pat       []string
+	Steps     []Step
+	Id        uint16
+	XSym      bool
+	YSym      bool
+	Prob      float64
+	DontBreak bool
 }
 
 // opcode:
@@ -407,6 +408,8 @@ outsideLoop:
 					vars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy))
 
 					newRule.Steps = append(newRule.Steps, Step{Opcode: 1, Name: []string{n[1 : len(n)-1]}, Eval: eval, Vars: vars, Operand: operand})
+				} else if strings.HasPrefix(l, "non-break") {
+					newRule.DontBreak = true
 				}
 			}
 		}
