@@ -1,4 +1,5 @@
 global M <^E, ^G>
+global A <^G, ^W, ^H>
 
 atom Empty alias E {
     section property {
@@ -35,12 +36,91 @@ atom RandomMovement {
     }
 }
 
+atom Thermodynamics {
+    section property {
+        cdef render 0
+    }
+    section update {
+        match (0, 0, 1, 1) {
+            pattern
+            x
+        }
+        -> P-0.01 {
+            set [temp] = [temp] - 1
+        }
+    }
+}
+
 atom Gas alias G {
     section property {
         cdef render 1
         cdef color #0000FF
+        def temp 5
     }
     section update {
-        inherit RandomMovement
+        inherit RandomMovement -P=0.05
+
+        match (0, 0, 1, 1) {
+            eval [temp] >= 10
+            pattern
+            x
+        }
+        -> {
+            pattern
+            W
+        }
     }
 }
+
+atom WarmGas alias W {
+    section property {
+        cdef render 1
+        cdef color #FFA031
+        def temp 15
+    }
+    section update {
+        inherit RandomMovement -P=0.3
+
+        match (0, 0, 1, 1) {
+            eval [temp] >= 20
+            pattern
+            x
+        }
+        -> {
+            pattern
+            H
+        }
+
+        match (0, 0, 1, 1) {
+            eval [temp] < 10
+            pattern
+            x
+        }
+        -> {
+            pattern
+            G
+        }
+    }
+}
+
+atom HotGas alias H {
+    section property {
+        cdef render 1
+        cdef color #FF0000
+        def temp 30
+    }
+    section update {
+        inherit RandomMovement -P=1
+
+        match (0, 0, 1, 1) {
+            eval [temp] < 20
+            pattern
+            x
+        }
+        -> {
+            pattern
+            W
+        }
+    }
+}
+

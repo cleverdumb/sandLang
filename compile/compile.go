@@ -88,8 +88,9 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["pickCoord"] = regexp.MustCompile(`\((\d*),\s+(\d*)\)`)
 	reg["fromSym"] = regexp.MustCompile(`sym\(([xy]*)\)`)
 	reg["fromArrow"] = regexp.MustCompile(`->\s*(P\s*-\s*([\d\.]*))?\s*{`)
-	reg["fromInherit"] = regexp.MustCompile(`inherit\s*(.*)`)
+	reg["fromInherit"] = regexp.MustCompile(`inherit\s+([a-zA-Z0-9]*)\s*(.*)?`)
 	reg["getEvalBracket"] = regexp.MustCompile(`\[([a-zA-Z0-9]*\s*(-\s*([0-9]+)\s*,\s*([0-9]+)\s*)?)\]`)
+	reg["modifyFlag"] = regexp.MustCompile(`-([a-zA-Z]+)=(.*)`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	sections := map[string]bool{
@@ -327,11 +328,30 @@ outsideLoop:
 					}
 					continue outsideLoop
 				} else if strings.HasPrefix(l, "inherit") {
-					name := reg["fromInherit"].FindStringSubmatch(l)[1]
+					split := reg["fromInherit"].FindStringSubmatch(l)
+					name := split[1]
+					probMod := float64(0)
+					if split[2] != "" {
+						flags := reg["anySpace"].Split(l, -1)[2:]
+						for _, f := range flags {
+							fsplit := reg["modifyFlag"].FindStringSubmatch(f)
+							n := fsplit[1]
+							v := fsplit[2]
+							if n == "P" {
+								p, err := strconv.ParseFloat(v, 64)
+								checkErr(err)
+
+								probMod = p
+							}
+						}
+					}
 					if v, ok := Atoms[name]; ok {
 						for _, r := range v.Rules {
 							Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, r)
 							Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1].Id = newRuleId
+							if probMod != 0 {
+								Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1].Prob = probMod
+							}
 							newRuleId++
 						}
 					}

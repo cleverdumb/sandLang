@@ -46,7 +46,7 @@ There are three optional sections in an atom declaration
 ### Rules
 Rules in sandlang works in the following way:
 1) In parallel the simulator chooses multiple squares at random
-2) For each chosen square, all the rules of the atom type is checked in order, centred on the atom based on position of origin property
+2) For each chosen square, one of the rule is picked, centred on the atom based on position of origin property
 3) Each square of the *match rule* is then checked. Each condition of the match block is also checked. If all of them matches the corresponding square, then the *result rule* is executed
 
 Rules can be copied from other atoms with `inherit [name]`\

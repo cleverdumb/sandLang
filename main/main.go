@@ -57,6 +57,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
+	updateDelay = 200 * time.Nanosecond
 )
 
 var quadVertices = []float32{
@@ -201,10 +202,10 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 	if button == glfw.MouseButton1 && action == glfw.Press {
 		newT := uint8(0)
 		switch mod {
-		// case glfw.ModControl:
-		// 	newT = revIdMap["Test"]
-		// case glfw.ModShift:
-		// 	newT = revIdMap["Slime"]
+		case glfw.ModControl:
+			newT = revIdMap["WarmGas"]
+		case glfw.ModShift:
+			newT = revIdMap["HotGas"]
 		default:
 			newT = revIdMap["Gas"]
 		}
@@ -259,12 +260,15 @@ outside:
 			if name, ok := idMap[grid[ry][rx].t]; ok {
 				ref := *atoms[name]
 
+				// if len(ref.Rules) > 0 {
 				for _, v := range rand.Perm(len(ref.Rules)) {
+					// ind := rand.Intn(len(ref.Rules))
 					ind := v
-					rule := ref.Rules[v]
+					// fmt.Println(ind)
+					rule := ref.Rules[ind]
 					// for ind, rule := range ref.Rules {
 					if rand.Float64() > rule.Prob {
-						continue
+						break
 					}
 					ruleApply := true
 					// s := 0
@@ -300,7 +304,7 @@ outside:
 					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
 					if !matchRule(ref, ox, oy, ind, s) {
 						ruleApply = false
-						continue
+						break
 					}
 
 					// fmt.Println(ref.ConstProp)
@@ -317,7 +321,7 @@ outside:
 					}
 
 					if !ruleApply {
-						continue
+						break
 					}
 
 					// fmt.Println("ruleApply:", ruleApply)
@@ -329,6 +333,8 @@ outside:
 						// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
 						// }
 					}
+
+					break
 				}
 				// fmt.Println(ind, ruleApply)
 				// }
@@ -343,7 +349,7 @@ outside:
 			}
 			// fmt.Println(time.Since(s))
 
-			time.Sleep(2 * time.Microsecond)
+			time.Sleep(updateDelay)
 			// break outside
 		}
 	}
@@ -352,6 +358,7 @@ outside:
 func changeType(x, y int, newT uint8) {
 	name := idMap[newT]
 	grid[y][x].t = newT
+	grid[y][x].prop = make(map[string]float32)
 	for n, val := range atoms[name].Prop {
 		// if _, ok := grid[y][x].prop[n]; !ok {
 		grid[y][x].prop[n] = val
@@ -512,6 +519,7 @@ func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int,
 
 func transfer(from cell, tx, ty int) {
 	grid[ty][tx].t = from.t
+	grid[ty][tx].prop = make(map[string]float32)
 	for n, v := range from.prop {
 		grid[ty][tx].prop[n] = v
 	}
