@@ -97,7 +97,8 @@ In a pattern used to map:\
 `[alias]` map to the type of the element *(Change of type)*
 `[defined symbol]` defined to be a cell in a previous step *(Transfer)*
 
-Transfer vs Change of type - *Transfer* keeps the properties of the source, while *change of type* resets them to default values
+Transfer vs Change of type - *Transfer* keeps the properties of the source, while *change of type* resets them to default values\
+Also only *change of type* executes *init* block
 
 Non-static properties are copied with default values to the new cell
 

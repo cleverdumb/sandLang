@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"runtime"
 	"slices"
 	"strings"
@@ -202,12 +203,12 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 	if button == glfw.MouseButton1 && action == glfw.Press {
 		newT := uint8(0)
 		switch mod {
-		case glfw.ModControl:
-			newT = revIdMap["WarmGas"]
-		case glfw.ModShift:
-			newT = revIdMap["HotGas"]
+		// case glfw.ModControl:
+		// 	newT = revIdMap["WarmGas"]
+		// case glfw.ModShift:
+		// 	newT = revIdMap["HotGas"]
 		default:
-			newT = revIdMap["Gas"]
+			newT = revIdMap["Water"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
@@ -318,7 +319,7 @@ outside:
 					// fmt.Println(ref.ConstProp)
 
 					for _, con := range rule.MatchCon {
-						res := evaluateMath(con.Expr, con.Names, s, rx, ry)
+						res := evaluateMath(con.Expr, con.Names, con.RandVars, s, rx, ry)
 
 						// fmt.Println(res)
 
@@ -377,6 +378,21 @@ func changeType(x, y int, newT uint8) {
 		// if _, ok := grid[y][x].prop[n]; !ok {
 		grid[y][x].prop[n] = val
 		// }
+	}
+
+	doInit(x, y, newT)
+}
+
+func doInit(x, y int, t uint8) {
+	steps := atoms[idMap[t]].Init
+	for _, step := range steps {
+		switch step.Opcode {
+		case 5:
+			name := step.Name[0]
+			res := evaluateMath(step.Eval, step.Vars, step.RandVars, 0, x, y)
+
+			grid[y][x].prop[name] = float32(res.(float64))
+		}
 	}
 }
 
@@ -492,7 +508,7 @@ func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 		case 1:
 			name := strings.Split(step.Name[0], "-")[0]
 			// nx, ny := step.Operand[0], step.Operand[1]
-			val := evaluateMath(step.Eval, step.Vars, s, rx, ry)
+			val := evaluateMath(step.Eval, step.Vars, step.RandVars, s, rx, ry)
 			// fmt.Println(val)
 			// fmt.Println(ox+cx, oy+cy, "cxy", cx, cy)
 			grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = float32(val.(float64))
@@ -500,7 +516,12 @@ func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 	}
 }
 
-func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int, s int, rx, ry int) interface{} {
+func randFromRange(l [3]float64) float64 {
+	amount := int(math.Ceil((l[1] - l[0]) / l[2]))
+	return l[0] + l[2]*float64(rand.Intn(amount))
+}
+
+func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int, randVars map[string][3]float64, s int, rx, ry int) interface{} {
 	// ox, oy absolute position of symbol x
 	param := make(map[string]interface{})
 	inc := make(map[string]int)
@@ -522,6 +543,10 @@ func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int,
 		} else if v, ok := atoms[idMap[grid[ty][tx].t]].ConstProp[name]; ok {
 			param[n] = float64(v)
 		}
+	}
+
+	for n, l := range randVars {
+		param[n[1:len(n)-1]] = randFromRange(l)
 	}
 	// fmt.Println("param", param)
 	res, err := expr.Evaluate(param)

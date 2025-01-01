@@ -26,6 +26,7 @@ type AtomRef struct {
 	Def       map[string][]string
 	Rules     []Rule
 	Alias     string
+	Init      []Step
 }
 
 type Color struct {
@@ -59,16 +60,18 @@ type Rule struct {
 // 5 - set symbol [name[0]] to cell at coord [1][0]
 // 6 - remember names [name[0], name[1], ...] at coord [1][0]
 type Step struct {
-	Opcode  uint8
-	Name    []string
-	Operand []float64
-	Eval    *govaluate.EvaluableExpression
-	Vars    map[string][][2]int
+	Opcode   uint8
+	Name     []string
+	Operand  []float64
+	Eval     *govaluate.EvaluableExpression
+	Vars     map[string][][2]int
+	RandVars map[string][3]float64
 }
 
 type Condition struct {
-	Names map[string][][2]int
-	Expr  *govaluate.EvaluableExpression
+	Names    map[string][][2]int
+	Expr     *govaluate.EvaluableExpression
+	RandVars map[string][3]float64
 }
 
 var reg = make(map[string]*regexp.Regexp)
@@ -91,6 +94,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["fromArrow"] = regexp.MustCompile(`->\s*(P\s*-\s*([\d\.]*))?\s*{`)
 	reg["fromInherit"] = regexp.MustCompile(`inherit\s+([a-zA-Z0-9]*)\s*(.*)?`)
 	reg["getEvalBracket"] = regexp.MustCompile(`\[([a-zA-Z0-9]*\s*(-\s*([0-9]+)\s*,\s*([0-9]+)\s*)?)\]`)
+	reg["getRandomBracket"] = regexp.MustCompile(`\[\$([a-zA-Z0-9]+)'([\d\.]+)'([\d\.]+)'([\d\.]+)\]`)
 	reg["modifyFlag"] = regexp.MustCompile(`-([a-zA-Z]+)=(.*)`)
 	inAtomDeclaration := false
 	currentAtom := ""
@@ -98,6 +102,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 		"property":   false,
 		"definition": false,
 		"update":     false,
+		"init":       false,
 	}
 	// 0 - not in rule, 1 - in match phase, 2 - in effect phase
 	inRule := 0
@@ -363,14 +368,14 @@ outsideLoop:
 				if strings.HasPrefix(l, "eval ") {
 					expr := l[5:]
 					// expr := "x + y"
-					vars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy))
+					vars, randVars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy), false)
 					// // fmt.Println(vars)
 					// eval, err := govaluate.NewEvaluableExpression(expr)
 					if err != nil {
 						panic(err)
 					}
 
-					newRule.MatchCon = append(newRule.MatchCon, Condition{Names: vars, Expr: eval})
+					newRule.MatchCon = append(newRule.MatchCon, Condition{Names: vars, Expr: eval, RandVars: randVars})
 				}
 			}
 
@@ -405,12 +410,29 @@ outsideLoop:
 						operand = []float64{0, 0}
 					}
 					expr := split[1]
-					vars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy))
+					vars, randVars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy), false)
 
-					newRule.Steps = append(newRule.Steps, Step{Opcode: 1, Name: []string{n[1 : len(n)-1]}, Eval: eval, Vars: vars, Operand: operand})
+					newRule.Steps = append(newRule.Steps, Step{Opcode: 1, Name: []string{n[1 : len(n)-1]}, Eval: eval, Vars: vars, Operand: operand, RandVars: randVars})
 				} else if strings.HasPrefix(l, "non-break") {
 					newRule.DontBreak = true
 				}
+			}
+
+		case sections["init"]:
+			if strings.HasPrefix(l, "set") {
+				split := reg["spacedEqual"].Split(l, -1)
+				n := strings.TrimSpace(split[0][4:])
+				splitn := reg["getEvalBracket"].FindStringSubmatch(n)[1:]
+				name := splitn[0]
+
+				expr := split[1]
+				operand := []float64{0, 0}
+
+				vars, randVars, eval := compileMath(expr, 0, 0, true)
+
+				// fmt.Println(n, splitn)
+
+				Atoms[currentAtom].Init = append(Atoms[currentAtom].Init, Step{Opcode: 5, Name: []string{name}, Operand: operand, Eval: eval, Vars: vars, RandVars: randVars})
 			}
 		}
 	}
@@ -432,11 +454,11 @@ func LogAtoms(atoms map[string]*AtomRef) {
 	}
 }
 
-func compileMath(expr string, ox, oy int) (map[string][][2]int, *govaluate.EvaluableExpression) {
+func compileMath(expr string, ox, oy int, initMode bool) (map[string][][2]int, map[string][3]float64, *govaluate.EvaluableExpression) {
 	possibleVars := reg["getEvalBracket"].FindAllStringSubmatch(expr, -1)
 	vars := make(map[string][][2]int)
 	for _, match := range possibleVars {
-		if len(match) > 3 && match[3] != "" {
+		if len(match) > 3 && match[3] != "" && !initMode {
 			i3, err := strconv.Atoi(match[3])
 			checkErr(err)
 			i4, err := strconv.Atoi(match[4])
@@ -448,10 +470,27 @@ func compileMath(expr string, ox, oy int) (map[string][][2]int, *govaluate.Evalu
 		}
 	}
 
+	possibleRands := reg["getRandomBracket"].FindAllStringSubmatch(expr, -1)
+	randVars := make(map[string][3]float64)
+
+	for _, match := range possibleRands {
+		fmt.Println(match)
+		min, err := strconv.ParseFloat(match[2], 64)
+		checkErr(err)
+
+		max, err := strconv.ParseFloat(match[3], 64)
+		checkErr(err)
+
+		step, err := strconv.ParseFloat(match[4], 64)
+		checkErr(err)
+
+		randVars[match[0]] = [3]float64{min, max, step}
+	}
+
 	eval, err := govaluate.NewEvaluableExpression(expr)
 	if err != nil {
 		panic(err)
 	}
 
-	return vars, eval
+	return vars, randVars, eval
 }

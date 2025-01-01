@@ -1,175 +1,97 @@
-global M <^E, ^G>
-global A <^G, ^W, ^H>
-
 atom Empty alias E {
     section property {
         cdef render 0
     }
 }
 
-atom RandomMovement {
+atom Water {
     section property {
-        cdef render 0
+        cdef render 1
+        cdef color #46B1C9
+        cdef left 0
+    }
+    section init {
+        set [left] = [$a'0'2'1]
     }
     section update {
-        match (0, 0, 2, 1) sym(x) {
-            pattern
-            x M
-        }
-        -> {
-            def P = pick(1, 0)
-            pattern
-            P x
-        }
-
-        match (0, 0, 1, 2) sym(y) {
-            pattern
-            x
-            M
-        }
-        -> {
-            def P = pick(0, 1)
-            pattern
-            P
-            x
-        }
-    }
-}
-
-atom AmbientHeatLoss {
-    section property {
-        cdef render 0
-    }
-    section update {
-        match (0, 0, 1, 1) {
-            eval [temp] > 0
-            pattern
-            x
-        }
-        -> {
-            set [temp] = [temp] - 1
-        }
-    }
-}
-
-atom HeatTransfer {
-    section property {
-        cdef render 0
-    }
-    section update {
-        match (0, 0, 2, 1) sym(x) {
-            pattern
-            x A
-            eval [temp] > [temp-1,0]
-        }
-        -> {
-            set [temp-1,0] = [temp-1,0] + 1
-            set [temp] = [temp] - 1
-            non-break
-        }
-
-        match (0, 0, 1, 2) sym(y) {
-            pattern
-            x
-            A
-            eval [temp] > [temp-0,1]
-        }
-        -> {
-            set [temp-0,1] = [temp-0,1] + 1
-            set [temp] = [temp] - 1
-            non-break
-        }
-
-        match (0, 0, 2, 2) sym(xy) {
+        match (0, 0, 2, 1) {
+            eval [left] == 0
             pattern
             x *
-            * A
-            eval [temp] > [temp-1,1]
         }
         -> {
-            set [temp-1,1] = [temp-1,1] + 1
-            set [temp] = [temp] - 1
-            non-break
+            def L = pick(1, 0)
+            pattern
+            L x
+        }
+
+        
+
+        match (0, 0, 2, 1) {
+            eval [left] == 0
+            pattern
+            x e
+        }
+        -> {
+            set [left] = 1
+        }
+
+        match (1, 0, 2, 1) {
+            eval [left] == 1
+            pattern
+            * x
+        }
+        -> {
+            def L = pick(0, 0)
+            pattern
+            x L
+        }
+
+        match (1, 0, 2, 1) {
+            eval [left] == 1
+            pattern
+            e x
+        }
+        -> {
+            set [left] = 0
+        }
+
+        match (0, 0, 1, 2) {
+            pattern
+            x
+            *
+        }
+        -> {
+            def L = pick(0, 1)
+            pattern
+            L
+            x
+        }
+
+        match (0, 0, 2, 2) {
+            pattern
+            x _
+            n *
+        }
+        -> {
+            def L = pick(1, 1)
+            pattern
+            L /
+            / x
+            set [left] = 0
+        }
+
+        match (1, 0, 2, 2) {
+            pattern
+            _ x
+            * n
+        }
+        -> {
+            def L = pick(0, 1)
+            pattern
+            / L
+            x /
+            set [left] = 1
         }
     }
 }
-
-atom Gas alias G {
-    section property {
-        cdef render 1
-        cdef color #0000FF
-        def temp 5
-    }
-    section update {
-        inherit RandomMovement -P=0.05
-        inherit AmbientHeatLoss -P=0.006
-        inherit HeatTransfer -P=0.1
-
-        match (0, 0, 1, 1) {
-            eval [temp] >= 10
-            pattern
-            x
-        }
-        -> {
-            pattern
-            W
-        }
-    }
-}
-
-atom WarmGas alias W {
-    section property {
-        cdef render 1
-        cdef color #FFA031
-        def temp 15
-    }
-    section update {
-        inherit RandomMovement -P=0.3
-        inherit AmbientHeatLoss -P=0.008
-        inherit HeatTransfer -P=0.1
-
-        match (0, 0, 1, 1) {
-            eval [temp] >= 20
-            pattern
-            x
-        }
-        -> {
-            pattern
-            H
-        }
-
-        match (0, 0, 1, 1) {
-            eval [temp] < 10
-            pattern
-            x
-        }
-        -> {
-            pattern
-            G
-        }
-    }
-}
-
-atom HotGas alias H {
-    section property {
-        cdef render 1
-        cdef color #FF0000
-        def temp 30
-    }
-    section update {
-        inherit RandomMovement -P=0.7
-        inherit AmbientHeatLoss -P=0.01
-        inherit HeatTransfer -P=0.1
-
-        match (0, 0, 1, 1) {
-            eval [temp] < 20
-            pattern
-            x
-        }
-        -> {
-            pattern
-            W
-        }
-    }
-}
-
