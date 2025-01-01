@@ -52,6 +52,8 @@ Rules in sandlang works in the following way:
 Rules can be copied from other atoms with `inherit [name]`\
 All rules of the atom will be copied, including ones that they inherited from others
 
+Inherited rules can be modified with `-P=[Probability]` where all rules will have the same specified probability
+
 A rule have a couple properties:
 - Width and height: How big the rule is - **Do not make it over 10 blocks in width OR height**
 - Posiiton of origin: The coordinate of the atom that the rule centres on (Described more below)
@@ -110,6 +112,12 @@ The coordinate can be ignored. That way by default it would be the coordinate of
 Static properties are referenced in the same way, taking the property of the type of atom at the coordinate
 
 In a *maths statement* you can use the normal `+ - * / %` and `== <= >= < >` and `()`
+
+A random element can be added with `[]` that includes `$[symbol]'[min]'[max]'[step]`\
+The random number *x* will be created `min ≤ x < max`, with resolution of `step`\
+The symbol is used such that identical random piece with same min, max, step and symbol will have the same value each time\
+A different symbol is needed to make the results different\
+For example all instances of `[$a'0'2'1]` will make the same 0 or 1, and `[$b'0'2'1]` will make a potentially different 0 or 1 to the ones with `a`
 
 ### Other features
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`

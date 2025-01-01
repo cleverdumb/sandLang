@@ -1,0 +1,168 @@
+global F <^E>
+global I <Stone>
+
+atom Empty alias E {
+    section property {
+        cdef render 0
+    }
+}
+
+atom Fall {
+    section property {
+        cdef render 0
+    }
+    section update {
+        match (0, 0, 1, 2) {
+            pattern
+            x
+            F
+        }
+        -> {
+            def F = pick(0, 1)
+            pattern
+            F
+            x
+        }
+    }
+}
+
+atom LeftWater alias L {
+    section property {
+        cdef render 1
+        cdef color #46B1C9
+    }
+    section update {
+        inherit Fall
+
+        match (1, 0, 2, 2) {
+            pattern
+            F x
+            * n
+        }
+        -> {
+            def F = pick(0, 0)
+            pattern
+            x F
+            / /
+        }
+
+        match (1, 0, 2, 1) {
+            pattern
+            R x
+        }
+        -> P-0.5 {
+            L R
+        }
+
+        match (0, 0, 2, 2) {
+            pattern
+            x _
+            n F
+        }
+        -> {
+            def F = pick(1, 1)
+            pattern
+            F /
+            / R
+        }
+
+        match (1, 0, 2, 1) {
+            pattern
+            e x
+        }
+        -> {
+            pattern
+            / R
+        }
+
+        match (1, 0, 2, 1) {
+            pattern
+            I x
+        }
+        -> {
+            pattern
+            / R
+        }
+    }
+}
+
+atom RightWater alias R {
+    section property {
+        cdef render 1
+        cdef color #46B139
+
+        def life 0
+    }
+    section update {
+        inherit Fall
+
+        match (0, 0, 1, 1) {
+            eval [life] >= 3
+            pattern
+            x
+        }
+        -> {
+            pattern
+            L
+            set [life] = 0
+        }
+
+        match (0, 0, 2, 2) {
+            pattern
+            x F
+            n *
+        }
+        -> {
+            def F = pick(1, 0)
+            pattern
+            F x
+            / /
+        }
+
+        match (0, 0, 2, 1) {
+            pattern
+            x L
+        }
+        -> P-0.5 {
+            pattern
+            L R
+        }
+
+        match (1, 0, 2, 2) {
+            pattern
+            _ x
+            F n
+        }
+        -> {
+            def F = pick(0, 1)
+            pattern
+            / F
+            L /
+        }
+
+        match (0, 0, 2, 1) {
+            pattern
+            x e
+        }
+        -> {
+            pattern
+            L /
+        }
+
+        match (0, 0, 2, 1) {
+            pattern
+            x I
+        }
+        -> {
+            pattern
+            L /
+        }
+    }
+}
+
+atom Stone {
+    section property {
+        cdef render 1
+        cdef color #FFFFFF
+    }
+}
