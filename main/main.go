@@ -58,7 +58,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 200 * time.Nanosecond
+	updateDelay = 300 * time.Nanosecond
 )
 
 var quadVertices = []float32{
@@ -201,14 +201,14 @@ func main() {
 
 func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	if button == glfw.MouseButton1 && action == glfw.Press {
-		newT := uint8(0)
+		// newT := uint8(0)
 		switch mod {
 		// case glfw.ModControl:
 		// 	newT = revIdMap["WarmGas"]
 		// case glfw.ModShift:
 		// 	newT = revIdMap["HotGas"]
 		default:
-			newT = revIdMap["Water"]
+			// newT = revIdMap["Water"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
@@ -223,7 +223,16 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 				// 	for x := 0; x < 1; x++ {
 				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
 					if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
-						changeType(boxX+x, boxY+y, newT)
+						// changeType(boxX+x, boxY+y, newT)
+						if mod != glfw.ModControl {
+							if rand.Intn(2) == 0 {
+								changeType(boxX+x, boxY+y, revIdMap["RightWater"])
+							} else {
+								changeType(boxX+x, boxY+y, revIdMap["LeftWater"])
+							}
+						} else {
+							changeType(boxX+x, boxY+y, revIdMap["Stone"])
+						}
 					}
 				}
 			}
