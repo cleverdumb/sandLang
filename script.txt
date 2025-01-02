@@ -1,0 +1,27 @@
+global T <^S>
+
+atom Empty alias E {
+    section property {
+        cdef render 0
+    }
+}
+
+atom Sand alias S {
+    section property {
+        cdef render 1
+        cdef color #FFFFFF
+    }
+    section update {
+        match (0, 0, 1, 2) {
+            pattern
+            x
+            ~T
+        }
+        -> {
+            pattern
+            _
+            x
+        }
+    }
+}
+

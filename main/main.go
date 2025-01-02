@@ -201,14 +201,14 @@ func main() {
 
 func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	if button == glfw.MouseButton1 && action == glfw.Press {
-		// newT := uint8(0)
+		newT := uint8(0)
 		switch mod {
 		// case glfw.ModControl:
 		// 	newT = revIdMap["WarmGas"]
 		// case glfw.ModShift:
 		// 	newT = revIdMap["HotGas"]
 		default:
-			// newT = revIdMap["Water"]
+			newT = revIdMap["Sand"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
@@ -223,16 +223,16 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 				// 	for x := 0; x < 1; x++ {
 				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
 					if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
-						// changeType(boxX+x, boxY+y, newT)
-						if mod != glfw.ModControl {
-							if rand.Intn(2) == 0 {
-								changeType(boxX+x, boxY+y, revIdMap["RightWater"])
-							} else {
-								changeType(boxX+x, boxY+y, revIdMap["LeftWater"])
-							}
-						} else {
-							changeType(boxX+x, boxY+y, revIdMap["Stone"])
-						}
+						changeType(boxX+x, boxY+y, newT)
+						// if mod != glfw.ModControl {
+						// 	if rand.Intn(2) == 0 {
+						// 		changeType(boxX+x, boxY+y, revIdMap["RightWater"])
+						// 	} else {
+						// 		changeType(boxX+x, boxY+y, revIdMap["LeftWater"])
+						// 	}
+						// } else {
+						// 	changeType(boxX+x, boxY+y, revIdMap["Stone"])
+						// }
 					}
 				}
 			}
@@ -318,6 +318,7 @@ outside:
 					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
 					if !matchRule(ref, ox, oy, ind, s) {
 						ruleApply = false
+						// fmt.Println("ruleApply:", ruleApply)
 						if !rule.DontBreak {
 							break
 						} else {
@@ -346,10 +347,8 @@ outside:
 						}
 					}
 
-					// fmt.Println("ruleApply:", ruleApply)
-
 					if ruleApply {
-						// fmt.Println(ind)
+						// fmt.Println("APPLYING")
 						doSteps(rule, ox, oy, s, rx, ry)
 						// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
 						// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
@@ -468,17 +467,27 @@ out:
 					}
 				}
 			default:
-				if v, ok := atom.Def[cellRule]; ok {
-					if !(slices.Contains(v, idMap[grid[tarY][tarX].t]) || slices.Contains(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias)) {
-						matching = false
-						break out
-					}
-				} else if a, ok := aliasMap[cellRule]; ok {
-					if idMap[grid[tarY][tarX].t] != a {
-						matching = false
+				if cellRule[0] == '~' {
+					if v, ok := atom.Def[cellRule[1:]]; ok {
+						// fmt.Println(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias, idMap[grid[tarY][tarX].t])
+						if slices.Contains(v, idMap[grid[tarY][tarX].t]) || slices.Contains(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias) {
+							matching = false
+							break out
+						}
 					}
 				} else {
-					matching = false
+					if v, ok := atom.Def[cellRule]; ok {
+						if !(slices.Contains(v, idMap[grid[tarY][tarX].t]) || slices.Contains(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias)) {
+							matching = false
+							break out
+						}
+					} else if a, ok := aliasMap[cellRule]; ok {
+						if idMap[grid[tarY][tarX].t] != a {
+							matching = false
+						}
+					} else {
+						matching = false
+					}
 				}
 			}
 		}

@@ -1,11 +1,12 @@
 
 Todo:
-  ☐ Make sand fall slower in slime - Randomness in statements
+  ✔ Randomness in statements @done(25-01-02 09:07)
   ✔ Make global sets @done(24-12-26 13:57)
   ☐ Make density
   ✔ Inherit rules @done(24-12-23 17:05)
-  ☐ Fix water
+  ✔ Fix water @done(25-01-01 20:21)
   ✔ Actual conditions in match @done(24-12-30 13:44)
   ☐ Except and else
-  ☐ Exclusion set
+  ✔ Exclusion set @done(25-01-02 09:26)
   ✔ Inherit modification @done(24-12-31 14:28)
+  ☐ Multiline comments

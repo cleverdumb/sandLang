@@ -90,6 +90,7 @@ In a pattern used to match:\
 `e` matches OOB\
 `[alias]` matches only that block type\
 `[set symbol]` matches anything that is in the set (sets have priority over alias if they are the same symbol)\
+`~[set symbol]` matches anything not in the set
 `n` matches non-*Empty*
 
 In a pattern used to map:\
