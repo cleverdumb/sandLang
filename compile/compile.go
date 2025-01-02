@@ -99,6 +99,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["modifyFlag"] = regexp.MustCompile(`-([a-zA-Z]+)=(.*)`)
 	inAtomDeclaration := false
 	currentAtom := ""
+	inComment := false
 	sections := map[string]bool{
 		"property":   false,
 		"definition": false,
@@ -116,6 +117,11 @@ outsideLoop:
 	for lineNum, l := range strings.Split(string(f), "\n") {
 		l = strings.TrimSpace(l)
 		switch {
+		case strings.HasPrefix(l, "*/"):
+			inComment = false
+		case strings.HasPrefix(l, "/*") || inComment:
+			inComment = true
+			continue outsideLoop
 		case l == "":
 			if log {
 				fmt.Println(lineNum, "Empty line")

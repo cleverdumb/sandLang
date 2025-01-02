@@ -12,6 +12,7 @@ atom Sand alias S {
         cdef color #FFFFFF
     }
     section update {
+        /*
         match (0, 0, 1, 2) {
             pattern
             x
@@ -22,6 +23,8 @@ atom Sand alias S {
             _
             x
         }
+        */
     }
 }
+
 
