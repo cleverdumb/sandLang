@@ -50,7 +50,8 @@ atom LeftWater alias L {
             pattern
             R x
         }
-        -> P-0.5 {
+        -> {
+            pattern
             L R
         }
 
@@ -123,7 +124,7 @@ atom RightWater alias R {
             pattern
             x L
         }
-        -> P-0.5 {
+        -> {
             pattern
             L R
         }

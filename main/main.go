@@ -58,7 +58,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 300 * time.Nanosecond
+	updateDelay = 2000 * time.Nanosecond
 )
 
 var quadVertices = []float32{
@@ -158,14 +158,14 @@ func main() {
 
 	for yi := uint16(0); yi < gh; yi++ {
 		for xi := uint16(0); xi < gw; xi++ {
-			if yi < gh-1 {
-				grid[yi][xi] = *makeCell(xi, yi, revIdMap["Empty"])
-			} else {
-				grid[yi][xi] = *makeCell(xi, yi, revIdMap["Dirt"])
-			}
+			// if yi < gh-1 {
+			// 	grid[yi][xi] = *makeCell(xi, yi, revIdMap["Empty"])
+			// } else {
+			// 	grid[yi][xi] = *makeCell(xi, yi, revIdMap["Dirt"])
+			// }
 			// 	grid[yi][xi] = *makeCell(xi, yi, 0)
 			// }
-			// grid[yi][xi] = *makeCell(xi, yi, 0)
+			grid[yi][xi] = *makeCell(xi, yi, revIdMap["Empty"])
 		}
 	}
 
@@ -181,6 +181,7 @@ func main() {
 	}
 
 	window.SetMouseButtonCallback(click)
+	window.SetKeyCallback(keyPress)
 
 	// Render Loop
 	for !window.ShouldClose() {
@@ -197,18 +198,36 @@ func main() {
 	quitCh <- 1
 }
 
+var keyMap = make(map[glfw.Key]bool)
+
+func keyPress(window *glfw.Window, key glfw.Key, scanCode int, action glfw.Action, mods glfw.ModifierKey) {
+	if action == glfw.Press {
+		keyMap[key] = true
+	} else if action == glfw.Release {
+		keyMap[key] = false
+	}
+}
+
 // var testUpdateX, testUpdateY int
 
 func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	if button == glfw.MouseButton1 && action == glfw.Press {
 		newT := uint8(0)
-		switch mod {
-		// case glfw.ModControl:
-		// 	newT = revIdMap["WarmGas"]
-		// case glfw.ModShift:
-		// 	newT = revIdMap["HotGas"]
-		default:
-			newT = revIdMap["Sand"]
+		switch {
+		case keyMap[glfw.KeyS]:
+			newT = revIdMap["Slime"]
+		case keyMap[glfw.KeyW]:
+			newT = revIdMap["Water"]
+		case keyMap[glfw.KeyO]:
+			newT = revIdMap["Oil"]
+		case keyMap[glfw.Key1]:
+			newT = revIdMap["Test1"]
+		case keyMap[glfw.Key2]:
+			newT = revIdMap["Test2"]
+		case keyMap[glfw.Key3]:
+			newT = revIdMap["Test3"]
+		case keyMap[glfw.Key4]:
+			newT = revIdMap["Test4"]
 		}
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
@@ -224,14 +243,18 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
 					if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
 						changeType(boxX+x, boxY+y, newT)
-						// if mod != glfw.ModControl {
-						// 	if rand.Intn(2) == 0 {
-						// 		changeType(boxX+x, boxY+y, revIdMap["RightWater"])
-						// 	} else {
-						// 		changeType(boxX+x, boxY+y, revIdMap["LeftWater"])
-						// 	}
+						// if mod == glfw.ModControl {
+						// 	changeType(boxX+x, boxY+y, revIdMap["Test3"])
+						// } else if mod == glfw.ModShift {
+						// 	changeType(boxX+x, boxY+y, revIdMap["Slime"])
+						// } else if mod == glfw.ModAlt {
+						// 	changeType(boxX+x, boxY+y, revIdMap["Oil"])
+						// } else if mod == glfw.ModCapsLock {
+						// 	changeType(boxX+x, boxY+y, revIdMap["Test1"])
+						// } else if button == glfw.MouseButton2 {
+						// 	changeType(boxX+x, boxY+y, revIdMap["Test2"])
 						// } else {
-						// 	changeType(boxX+x, boxY+y, revIdMap["Stone"])
+						// 	changeType(boxX+x, boxY+y, revIdMap["Water"])
 						// }
 					}
 				}
@@ -278,11 +301,12 @@ outside:
 					rule := ref.Rules[ind]
 					// for ind, rule := range ref.Rules {
 					if rand.Float64() > rule.Prob {
-						if !rule.DontBreak {
-							break
-						} else {
-							continue
-						}
+						// if !rule.DontBreak {
+						// 	break
+						// } else {
+						// 	continue
+						// }
+						continue
 					}
 					ruleApply := true
 					// s := 0
@@ -319,11 +343,12 @@ outside:
 					if !matchRule(ref, ox, oy, ind, s) {
 						ruleApply = false
 						// fmt.Println("ruleApply:", ruleApply)
-						if !rule.DontBreak {
-							break
-						} else {
-							continue
-						}
+						// if !rule.DontBreak {
+						// 	break
+						// } else {
+						// 	continue
+						// }
+						continue
 					}
 
 					// fmt.Println(ref.ConstProp)
@@ -340,11 +365,12 @@ outside:
 					}
 
 					if !ruleApply {
-						if !rule.DontBreak {
-							break
-						} else {
-							continue
-						}
+						// if !rule.DontBreak {
+						// 	break
+						// } else {
+						// 	continue
+						// }
+						continue
 					}
 
 					if ruleApply {
