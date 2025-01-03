@@ -58,7 +58,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 2000 * time.Nanosecond
+	updateDelay = 400 * time.Nanosecond
 )
 
 var quadVertices = []float32{
@@ -80,6 +80,7 @@ var atoms = make(map[string]*compile.AtomRef)
 var idMap = make(map[uint8]string)
 var revIdMap = make(map[string]uint8)
 var aliasMap = make(map[string]string)
+var placeKeys = make(map[rune]uint8)
 
 var zones [gh / 10][gw / 10]sync.Mutex
 
@@ -154,6 +155,9 @@ func main() {
 		if v.Alias != "" {
 			aliasMap[v.Alias] = name
 		}
+		if v.Key != ' ' {
+			placeKeys[v.Key] = v.Id
+		}
 	}
 
 	for yi := uint16(0); yi < gh; yi++ {
@@ -181,7 +185,7 @@ func main() {
 	}
 
 	window.SetMouseButtonCallback(click)
-	window.SetKeyCallback(keyPress)
+	window.SetCharCallback(keyPress)
 
 	// Render Loop
 	for !window.ShouldClose() {
@@ -198,14 +202,11 @@ func main() {
 	quitCh <- 1
 }
 
-var keyMap = make(map[glfw.Key]bool)
+var currentKey rune
 
-func keyPress(window *glfw.Window, key glfw.Key, scanCode int, action glfw.Action, mods glfw.ModifierKey) {
-	if action == glfw.Press {
-		keyMap[key] = true
-	} else if action == glfw.Release {
-		keyMap[key] = false
-	}
+func keyPress(window *glfw.Window, char rune) {
+	currentKey = char
+	// fmt.Println(currentKey)
 }
 
 // var testUpdateX, testUpdateY int
@@ -213,22 +214,27 @@ func keyPress(window *glfw.Window, key glfw.Key, scanCode int, action glfw.Actio
 func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	if button == glfw.MouseButton1 && action == glfw.Press {
 		newT := uint8(0)
-		switch {
-		case keyMap[glfw.KeyS]:
-			newT = revIdMap["Slime"]
-		case keyMap[glfw.KeyW]:
-			newT = revIdMap["Water"]
-		case keyMap[glfw.KeyO]:
-			newT = revIdMap["Oil"]
-		case keyMap[glfw.Key1]:
-			newT = revIdMap["Test1"]
-		case keyMap[glfw.Key2]:
-			newT = revIdMap["Test2"]
-		case keyMap[glfw.Key3]:
-			newT = revIdMap["Test3"]
-		case keyMap[glfw.Key4]:
-			newT = revIdMap["Test4"]
+		// switch {
+		// case keyMap[glfw.KeyS]:
+		// 	newT = revIdMap["Slime"]
+		// case keyMap[glfw.KeyW]:
+		// 	newT = revIdMap["Water"]
+		// case keyMap[glfw.KeyO]:
+		// 	newT = revIdMap["Oil"]
+		// case keyMap[glfw.Key1]:
+		// 	newT = revIdMap["Test1"]
+		// case keyMap[glfw.Key2]:
+		// 	newT = revIdMap["Test2"]
+		// case keyMap[glfw.Key3]:
+		// 	newT = revIdMap["Test3"]
+		// case keyMap[glfw.Key4]:
+		// 	newT = revIdMap["Test4"]
+		// }
+
+		if t, ok := placeKeys[currentKey]; ok {
+			newT = t
 		}
+
 		posX, posY := w.GetCursorPos()
 		boxX, boxY := int(posX/bw), int(posY/bh)
 

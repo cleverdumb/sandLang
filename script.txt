@@ -26,6 +26,19 @@ atom Fall {
             F
             x
         }
+
+        match (0, 1, 1, 2) {
+            eval [density] < [density-0,0]
+            pattern
+            F
+            x
+        }
+        -> {
+            def F = pick(0, 0)
+            pattern
+            x
+            F
+        }
     }
 }
 
@@ -34,6 +47,7 @@ atom Water alias W {
     section property {
         cdef render 1
         cdef color #46B1C9
+        cdef key w
 
         cdef density 10
 
@@ -277,6 +291,7 @@ atom Slime alias S {
     section property {
         cdef render 1
         cdef color #32DE8A
+        cdef key s
 
         cdef density 5
 
@@ -294,6 +309,7 @@ atom Oil alias O {
     section property {
         cdef render 1
         cdef color #EFF7CF
+        cdef key o
 
         cdef density 2
 
@@ -311,6 +327,7 @@ atom Test1 alias T1 {
     section property {
         cdef render 1
         cdef color #FFFFFF
+        cdef key 1
 
         cdef density 1
     }
@@ -323,6 +340,7 @@ atom Test2 alias T2 {
     section property {
         cdef render 1
         cdef color #CCCCCC
+        cdef key 2
 
         cdef density 4
     }
@@ -335,6 +353,7 @@ atom Test3 alias T3 {
     section property {
         cdef render 1
         cdef color #AAAAAA
+        cdef key 3
 
         cdef density 7
     }
@@ -347,6 +366,7 @@ atom Test4 alias T4 {
     section property {
         cdef render 1
         cdef color #888888
+        cdef key 4
 
         cdef density 13
     }

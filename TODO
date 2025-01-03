@@ -10,3 +10,6 @@ Todo:
   ✔ Exclusion set @done(25-01-02 09:26)
   ✔ Inherit modification @done(24-12-31 14:28)
   ✔ Multiline comments @done(25-01-02 09:38)
+  ☐ Repeat match and rule
+  ☐ Rule sets
+  ✔ Place method in sandLang - Key cdef @done(25-01-03 13:45)

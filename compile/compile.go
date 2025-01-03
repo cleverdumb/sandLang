@@ -21,6 +21,7 @@ var Atoms = make(map[string]*AtomRef)
 type AtomRef struct {
 	Id        uint8
 	Color     Color
+	Key       rune
 	Prop      map[string]float32
 	ConstProp map[string]float32
 	Def       map[string][]string
@@ -143,7 +144,7 @@ outsideLoop:
 		case strings.HasPrefix(l, "atom"):
 			matched := reg["atom"].FindStringSubmatch(l)
 			name := matched[1]
-			Atoms[name] = &AtomRef{Id: uint8(currAtomId), Prop: make(map[string]float32), ConstProp: make(map[string]float32), Def: make(map[string][]string)}
+			Atoms[name] = &AtomRef{Id: uint8(currAtomId), Prop: make(map[string]float32), ConstProp: make(map[string]float32), Def: make(map[string][]string), Key: ' '}
 			if len(matched) >= 4 && matched[3] != "" {
 				Atoms[name].Alias = matched[3]
 			} else {
@@ -224,6 +225,9 @@ outsideLoop:
 				if log {
 					fmt.Println(lineNum, "Set property color of", currentAtom, "to (", r, g, b, ")")
 				}
+			} else if n == "key" {
+				r := reg["anySpace"].Split(l, -1)[2]
+				Atoms[currentAtom].Key = rune(r[0])
 			} else {
 				num, err := strconv.ParseFloat(v, 32)
 				checkErr(err)
