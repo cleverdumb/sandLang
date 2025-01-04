@@ -79,8 +79,8 @@ var reg = make(map[string]*regexp.Regexp)
 
 func CompileScript(log bool) map[string]*AtomRef {
 	currAtomId := 0
-	f, err := os.ReadFile("../periodicTable/Density.txt")
-	// f, err := os.ReadFile("../script.txt")
+	// f, err := os.ReadFile("../periodicTable/Density.txt")
+	f, err := os.ReadFile("../script.txt")
 	if err != nil {
 		panic(err)
 	}

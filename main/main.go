@@ -49,8 +49,8 @@ void main() {
 ` + "\x00"
 
 const (
-	gw          = 100
-	gh          = 100
+	gw          = 200
+	gh          = 200
 	scrW        = 800
 	scrH        = 800
 	bw          = scrW / gw
@@ -58,7 +58,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 400 * time.Nanosecond
+	updateDelay = 800 * time.Nanosecond
 )
 
 var quadVertices = []float32{
@@ -242,8 +242,12 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// testUpdateY = boxY
 
 		// fmt.Printf("Cell %+v\n", grid[boxY][boxX])
-		for y := -5; y <= 5; y++ {
-			for x := -5; x <= 5; x++ {
+		size := 5
+		if v, ok := atoms[idMap[newT]].ConstProp["size"]; ok {
+			size = int(v)
+		}
+		for y := 0; y < size; y++ {
+			for x := 0; x < size; x++ {
 				// for y := 0; y < 1; y++ {
 				// 	for x := 0; x < 1; x++ {
 				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
