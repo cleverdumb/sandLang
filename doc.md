@@ -71,6 +71,8 @@ Each line in the block defines a condition that must be satisfied, except `patte
 
 A condition can also be an `eval` which precedes a *Maths statement*. If all conditions evaluates to true, only then the update block is executed
 
+The entire block can be replaced with `repeat match` to repeat from the previous rule, along with symmetry and other properties
+
 #### Update
 All match must have an update\
 An update block is defined in this way:\
@@ -80,6 +82,8 @@ Each line in the update block corresponds to a step of one of these:
 2) Mapping onto pattern - `pattern` followed by the *pattern*
 3) Setting a non-static property - `set [property] [Maths statement]`
 4) `non-break` picks another rule to execute after this one, instead of choosing another random block
+
+The entire block can be replaced with `repeat effect` to repeat *update block* along with probability from the previous rule
 
 ### Patterns
 Each line of the pattern correspond to a row of cells, and each cell in the row must be seperated by any amount of spaces
