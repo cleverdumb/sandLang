@@ -79,8 +79,8 @@ var reg = make(map[string]*regexp.Regexp)
 
 func CompileScript(log bool) map[string]*AtomRef {
 	currAtomId := 0
-	// f, err := os.ReadFile("../elementArchive/Water.txt")
-	f, err := os.ReadFile("../script.txt")
+	f, err := os.ReadFile("../periodicTable/Density.txt")
+	// f, err := os.ReadFile("../script.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -371,6 +371,32 @@ outsideLoop:
 							}
 							newRuleId++
 						}
+					}
+				} else if strings.HasPrefix(l, "repeat") {
+					p2 := reg["anySpace"].Split(l, -1)[1]
+					prev := Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1]
+					if p2 == "match" {
+						newRule.Id = newRuleId
+						newRule.MatchCon = prev.MatchCon
+						newRule.Match = prev.Match
+						newRule.W = prev.W
+						newRule.H = prev.H
+						newRule.Ox = prev.Ox
+						newRule.Oy = prev.Oy
+						newRule.XSym = prev.XSym
+						newRule.YSym = prev.YSym
+					} else if p2 == "effect" {
+						newRule.DontBreak = prev.DontBreak
+						newRule.Pat = prev.Pat
+						newRule.Steps = prev.Steps
+						newRule.Prob = prev.Prob
+
+						// inRule = 0
+						Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
+						inPattern = false
+						newRule = Rule{}
+						newRuleId++
+						continue outsideLoop
 					}
 				}
 			}

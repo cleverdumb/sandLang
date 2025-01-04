@@ -1,5 +1,5 @@
 global F <^E, ^W, ^S, ^O>
-global I <Stone, ^T1, ^T2, ^T3, ^T4>
+global I <^T1, ^T2, ^T3, ^T4>
 global L <^W, ^S, ^O>
 
 atom Empty alias E {
@@ -78,12 +78,7 @@ atom Water alias W {
             F x
             * e
         }
-        -> {
-            def F = pick(0, 0)
-            pattern
-            x F
-            / /
-        }
+        repeat effect
 
         
         match (2, 0, 3, 2) {
@@ -105,12 +100,7 @@ atom Water alias W {
             F F x
             * * e
         }
-        -> {
-            def F = pick(0, 0)
-            pattern
-            x / F
-            / / /
-        }
+        repeat effect
         
 
         match (0, 0, 2, 2) {
@@ -132,12 +122,7 @@ atom Water alias W {
             x F
             n *
         }
-        -> {
-            def F = pick(1, 0)
-            pattern
-            F x
-            / /
-        }
+        repeat effect
 
         
         match (0, 0, 3, 2) {
@@ -159,12 +144,7 @@ atom Water alias W {
             x F F
             e * *
         }
-        -> {
-            def F = pick(2, 0)
-            pattern
-            F / x 
-            / / /
-        }
+        repeat effect
         
 
         match (1, 0, 2, 1) {
