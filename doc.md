@@ -67,7 +67,7 @@ Eg: `match (0, 0, 2, 2) {}` defines a match block with `width` and `height` both
 
 Symmetry is defined with `sym([x or y or xy])`
 
-Each line in the block defines a condition that must be satisfied, except `pattern`, which matches the *pattern* that comes in the next few lines
+Each line in the block defines a condition that must be satisfied, except `pattern`, which matches the *pattern* that comes in the next few lines. Patterns are optional
 
 A condition can also be an `eval` which precedes a *Maths statement*. If all conditions evaluates to true, only then the update block is executed
 

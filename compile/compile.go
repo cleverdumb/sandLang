@@ -37,19 +37,20 @@ type Color struct {
 }
 
 type Rule struct {
-	W         uint8
-	H         uint8
-	Ox        int8
-	Oy        int8
-	Match     []string
-	MatchCon  []Condition
-	Pat       []string
-	Steps     []Step
-	Id        uint16
-	XSym      bool
-	YSym      bool
-	Prob      float64
-	DontBreak bool
+	W              uint8
+	H              uint8
+	Ox             int8
+	Oy             int8
+	Match          []string
+	MatchCon       []Condition
+	Pat            []string
+	Steps          []Step
+	Id             uint16
+	XSym           bool
+	YSym           bool
+	Prob           float64
+	DontBreak      bool
+	NoMatchPattern bool
 }
 
 // opcode:
@@ -172,6 +173,9 @@ outsideLoop:
 			if inRule == 1 {
 				inRule = 0
 				inPattern = false
+				if len(newRule.Match) <= 0 || newRule.Match[0] == "" {
+					newRule.NoMatchPattern = true
+				}
 				if log {
 					fmt.Printf("%v End of match phase\n", lineNum)
 				}

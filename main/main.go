@@ -350,15 +350,17 @@ outside:
 					// fmt.Printf("ox: %v, oy: %v, s: %v\n", ox, oy, s)
 
 					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
-					if !matchRule(ref, ox, oy, ind, s) {
-						ruleApply = false
-						// fmt.Println("ruleApply:", ruleApply)
-						// if !rule.DontBreak {
-						// 	break
-						// } else {
-						// 	continue
-						// }
-						continue
+					if !rule.NoMatchPattern {
+						if !matchRule(ref, ox, oy, ind, s) {
+							ruleApply = false
+							// fmt.Println("ruleApply:", ruleApply)
+							// if !rule.DontBreak {
+							// 	break
+							// } else {
+							// 	continue
+							// }
+							continue
+						}
 					}
 
 					// fmt.Println(ref.ConstProp)

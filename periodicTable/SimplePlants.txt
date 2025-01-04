@@ -167,7 +167,7 @@ atom Plant alias P {
             pattern
             x L
             set [left-1,0] = 0
-            set [lifetime-1,0] = [$a'3'7'1]
+            set [lifetime-1,0] = [$a'7'12'1]
 
             set [cd] = 4
             non-break
@@ -183,7 +183,7 @@ atom Plant alias P {
             pattern
             L x
             set [left-0,0] = 1
-            set [lifetime-0,0] = [$a'3'7'1]
+            set [lifetime-0,0] = [$a'7'12'1]
 
             set [cd] = 4
             non-break
