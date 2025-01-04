@@ -490,6 +490,9 @@ out:
 						matching = false
 						break out
 					}
+				} else {
+					matching = false
+					break out
 				}
 			case "n":
 				if !outside {
@@ -497,6 +500,9 @@ out:
 						matching = false
 						break out
 					}
+				} else {
+					matching = false
+					break out
 				}
 			default:
 				if cellRule[0] == '~' {

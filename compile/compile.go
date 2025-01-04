@@ -98,6 +98,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["getEvalBracket"] = regexp.MustCompile(`\[([a-zA-Z0-9]*\s*(-\s*([0-9]+)\s*,\s*([0-9]+)\s*)?)\]`)
 	reg["getRandomBracket"] = regexp.MustCompile(`\[\$([a-zA-Z0-9]+)'([\d\.]+)'([\d\.]+)'([\d\.]+)\]`)
 	reg["modifyFlag"] = regexp.MustCompile(`-([a-zA-Z]+)=(.*)`)
+	reg["fromRuleset"] = regexp.MustCompile(`ruleset\s+([a-zA-Z0-9]+)\s+{`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	inComment := false
@@ -114,6 +115,8 @@ func CompileScript(log bool) map[string]*AtomRef {
 	patternLineCount := 0
 	newRule := Rule{}
 	globalSets := make(map[string][]string)
+	globalRules := make(map[string][]Rule)
+	currentGlobalRule := ""
 outsideLoop:
 	for lineNum, l := range strings.Split(string(f), "\n") {
 		l = strings.TrimSpace(l)
@@ -160,6 +163,11 @@ outsideLoop:
 			}
 			currAtomId++
 
+		case strings.HasPrefix(l, "ruleset"):
+			match := reg["fromRuleset"].FindStringSubmatch(l)
+			name := match[1]
+			currentGlobalRule = name
+
 		case l == "}":
 			if inRule == 1 {
 				inRule = 0
@@ -171,7 +179,11 @@ outsideLoop:
 			}
 			if inRule == 2 {
 				inRule = 0
-				Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
+				if currentGlobalRule == "" {
+					Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
+				} else {
+					globalRules[currentGlobalRule] = append(globalRules[currentGlobalRule], newRule)
+				}
 				inPattern = false
 				newRule = Rule{}
 				if log {
@@ -188,6 +200,10 @@ outsideLoop:
 					}
 					continue outsideLoop
 				}
+			}
+			if currentGlobalRule != "" {
+				currentGlobalRule = ""
+				continue outsideLoop
 			}
 			if inAtomDeclaration {
 				inAtomDeclaration = false
@@ -362,15 +378,20 @@ outsideLoop:
 							}
 						}
 					}
+					target := make([]Rule, 1)
 					if v, ok := Atoms[name]; ok {
-						for _, r := range v.Rules {
-							Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, r)
-							Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1].Id = newRuleId
-							if probMod != 0 {
-								Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1].Prob = probMod
-							}
-							newRuleId++
+						target = v.Rules
+					} else if v, ok := globalRules[name]; ok {
+						target = v
+					}
+
+					for _, r := range target {
+						Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, r)
+						Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1].Id = newRuleId
+						if probMod != 0 {
+							Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1].Prob = probMod
 						}
+						newRuleId++
 					}
 				} else if strings.HasPrefix(l, "repeat") {
 					p2 := reg["anySpace"].Split(l, -1)[1]
@@ -392,7 +413,11 @@ outsideLoop:
 						newRule.Prob = prev.Prob
 
 						// inRule = 0
-						Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
+						if currentGlobalRule == "" {
+							Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
+						} else {
+							globalRules[currentGlobalRule] = append(globalRules[currentGlobalRule], newRule)
+						}
 						inPattern = false
 						newRule = Rule{}
 						newRuleId++

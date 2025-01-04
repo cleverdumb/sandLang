@@ -9,36 +9,31 @@ atom Empty alias E {
     }
 }
 
-atom Fall {
-    section property {
-        cdef render 0
+ruleset Fall {
+    match (0, 0, 1, 2) {
+        eval [density] > [density-0,1]
+        pattern
+        x
+        F
     }
-    section update {
-        match (0, 0, 1, 2) {
-            eval [density] > [density-0,1]
-            pattern
-            x
-            F
-        }
-        -> {
-            def F = pick(0, 1)
-            pattern
-            F
-            x
-        }
+    -> {
+        def F = pick(0, 1)
+        pattern
+        F
+        x
+    }
 
-        match (0, 1, 1, 2) {
-            eval [density] < [density-0,0]
-            pattern
-            F
-            x
-        }
-        -> {
-            def F = pick(0, 0)
-            pattern
-            x
-            F
-        }
+    match (0, 1, 1, 2) {
+        eval [density] < [density-0,0]
+        pattern
+        F
+        x
+    }
+    -> {
+        def F = pick(0, 0)
+        pattern
+        x
+        F
     }
 }
 
