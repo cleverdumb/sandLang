@@ -49,16 +49,16 @@ void main() {
 ` + "\x00"
 
 const (
-	gw          = 200
-	gh          = 200
+	gw          = 100
+	gh          = 100
 	scrW        = 800
 	scrH        = 800
 	bw          = scrW / gw
 	bh          = scrH / gh
-	threadCount = 7
+	threadCount = 1
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 800 * time.Nanosecond
+	updateDelay = 32 * time.Nanosecond
 )
 
 var quadVertices = []float32{
@@ -74,7 +74,7 @@ var quadVertices = []float32{
 var program uint32
 var grid [gh][gw]cell
 
-var texMap = make(map[uint8]uint32)
+var colorCache = make(map[compile.Color]uint32)
 
 var atoms = make(map[string]*compile.AtomRef)
 var idMap = make(map[uint8]string)
@@ -149,7 +149,7 @@ func main() {
 	gl.UseProgram(program)
 
 	for name, v := range atoms {
-		texMap[v.Id] = generateColorTexture(v.Color.R, v.Color.G, v.Color.B)
+		colorCache[v.Color] = generateColorTexture(v.Color.R, v.Color.G, v.Color.B)
 		idMap[v.Id] = name
 		revIdMap[name] = v.Id
 		if v.Alias != "" {
@@ -425,6 +425,8 @@ func changeType(x, y int, newT uint8) {
 		grid[y][x].prop[n] = val
 		// }
 	}
+
+	// fmt.Println(grid[y][x].prop)
 
 	doInit(x, y, newT)
 }
@@ -754,15 +756,39 @@ func draw(textureID, vao uint32) {
 }
 
 func (c cell) drawCell() {
-	_, ok := idMap[c.t]
-	if ok {
-		if atoms[idMap[c.t]].ConstProp["render"] == 1 {
-			t, ok := texMap[c.t]
-			if ok {
+	regX, regY := int(c.x/10), int(c.y/10)
+	zones[regY][regX].Lock()
+	if id, ok := idMap[c.t]; ok {
+		if atoms[id].ConstProp["render"] == 1 {
+			var col compile.Color
+			if atoms[id].DynamicColor {
+				// fmt.Println(c, id)
+				col = computeColor(atoms[id].ColorRules, int(c.x), int(c.y))
+			} else {
+				// fmt.Println("MARKER")
+				col = atoms[id].Color
+			}
+			// fmt.Println(col)
+			if t, ok := colorCache[col]; ok {
+				draw(t, c.vao)
+			} else {
+				colorCache[col] = generateColorTexture(col.R, col.G, col.B)
 				draw(t, c.vao)
 			}
 		}
 	}
+	zones[regY][regX].Unlock()
+}
+
+func computeColor(rules []compile.ColorRule, x, y int) compile.Color {
+	for _, r := range rules {
+		conRes := evaluateMath(r.Cond.Expr, r.Cond.Names, r.Cond.RandVars, 0, x, y)
+		if conRes == true {
+			// fmt.Println(r.Col.R)
+			return compile.Color{R: uint8(evaluateMath(r.Col.R.Eval, r.Col.R.Vars, r.Col.R.RandVars, 0, x, y).(float64)), G: uint8(evaluateMath(r.Col.G.Eval, r.Col.G.Vars, r.Col.G.RandVars, 0, x, y).(float64)), B: uint8(evaluateMath(r.Col.B.Eval, r.Col.B.Vars, r.Col.B.RandVars, 0, x, y).(float64))}
+		}
+	}
+	return compile.Color{R: uint8(0), G: uint8(0), B: uint8(0)}
 }
 
 // Generate a simple 1x1 color texture

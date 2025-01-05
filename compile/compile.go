@@ -19,15 +19,34 @@ func checkErr(e error) {
 var Atoms = make(map[string]*AtomRef)
 
 type AtomRef struct {
-	Id        uint8
-	Color     Color
-	Key       rune
-	Prop      map[string]float32
-	ConstProp map[string]float32
-	Def       map[string][]string
-	Rules     []Rule
-	Alias     string
-	Init      []Step
+	Id           uint8
+	Color        Color
+	Key          rune
+	Prop         map[string]float32
+	ConstProp    map[string]float32
+	Def          map[string][]string
+	Rules        []Rule
+	Alias        string
+	Init         []Step
+	DynamicColor bool
+	ColorRules   []ColorRule
+}
+
+type ColorRule struct {
+	Cond Condition
+	Col  DynamicColor
+}
+
+type DynamicColor struct {
+	R ColorComponent
+	G ColorComponent
+	B ColorComponent
+}
+
+type ColorComponent struct {
+	Eval     *govaluate.EvaluableExpression
+	Vars     map[string][][2]int
+	RandVars map[string][3]float64
 }
 
 type Color struct {
@@ -100,6 +119,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["getRandomBracket"] = regexp.MustCompile(`\[\$([a-zA-Z0-9]+)'([\d\.]+)'([\d\.]+)'([\d\.]+)\]`)
 	reg["modifyFlag"] = regexp.MustCompile(`-([a-zA-Z]+)=(.*)`)
 	reg["fromRuleset"] = regexp.MustCompile(`ruleset\s+([a-zA-Z0-9]+)\s+{`)
+	reg["spacedArrow"] = regexp.MustCompile(`\s*=>\s*`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	inComment := false
@@ -108,6 +128,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 		"definition": false,
 		"update":     false,
 		"init":       false,
+		"color":      false,
 	}
 	// 0 - not in rule, 1 - in match phase, 2 - in effect phase
 	inRule := 0
@@ -148,7 +169,7 @@ outsideLoop:
 		case strings.HasPrefix(l, "atom"):
 			matched := reg["atom"].FindStringSubmatch(l)
 			name := matched[1]
-			Atoms[name] = &AtomRef{Id: uint8(currAtomId), Prop: make(map[string]float32), ConstProp: make(map[string]float32), Def: make(map[string][]string), Key: ' '}
+			Atoms[name] = &AtomRef{Id: uint8(currAtomId), Prop: make(map[string]float32), ConstProp: make(map[string]float32), Def: make(map[string][]string), Key: ' ', DynamicColor: false}
 			if len(matched) >= 4 && matched[3] != "" {
 				Atoms[name].Alias = matched[3]
 			} else {
@@ -231,19 +252,24 @@ outsideLoop:
 			split := reg["anySpace"].Split(l, -1)
 			n, v := split[1], split[2]
 			if n == "color" {
-				temp := reg["colorRGB"].FindStringSubmatch(v)
-				r, err := strconv.ParseUint(temp[1], 16, 8)
-				checkErr(err)
+				split := reg["anySpace"].Split(l, -1)
+				if split[2] == "dynamic" {
+					Atoms[currentAtom].DynamicColor = true
+				} else {
+					temp := reg["colorRGB"].FindStringSubmatch(v)
+					r, err := strconv.ParseUint(temp[1], 16, 8)
+					checkErr(err)
 
-				g, err := strconv.ParseUint(temp[2], 16, 8)
-				checkErr(err)
+					g, err := strconv.ParseUint(temp[2], 16, 8)
+					checkErr(err)
 
-				b, err := strconv.ParseUint(temp[3], 16, 8)
-				checkErr(err)
+					b, err := strconv.ParseUint(temp[3], 16, 8)
+					checkErr(err)
 
-				Atoms[currentAtom].Color = Color{uint8(r), uint8(g), uint8(b)}
-				if log {
-					fmt.Println(lineNum, "Set property color of", currentAtom, "to (", r, g, b, ")")
+					Atoms[currentAtom].Color = Color{uint8(r), uint8(g), uint8(b)}
+					if log {
+						fmt.Println(lineNum, "Set property color of", currentAtom, "to (", r, g, b, ")")
+					}
 				}
 			} else if n == "key" {
 				r := reg["anySpace"].Split(l, -1)[2]
@@ -500,6 +526,21 @@ outsideLoop:
 
 				Atoms[currentAtom].Init = append(Atoms[currentAtom].Init, Step{Opcode: 5, Name: []string{name}, Operand: operand, Eval: eval, Vars: vars, RandVars: randVars})
 			}
+
+		case sections["color"]:
+			newColorRule := ColorRule{}
+			split := reg["spacedArrow"].Split(l, 2)
+			vars, randVars, eval := compileMath(split[0], 0, 0, true)
+			comps := reg["splitSet"].Split(split[1], 3)
+
+			rvars, rrandVars, reval := compileMath(comps[0], 0, 0, true)
+			gvars, grandVars, geval := compileMath(comps[1], 0, 0, true)
+			bvars, brandVars, beval := compileMath(comps[2], 0, 0, true)
+
+			newColorRule.Cond = Condition{Names: vars, RandVars: randVars, Expr: eval}
+			newColorRule.Col = DynamicColor{R: ColorComponent{Vars: rvars, RandVars: rrandVars, Eval: reval}, G: ColorComponent{Vars: gvars, RandVars: grandVars, Eval: geval}, B: ColorComponent{Vars: bvars, RandVars: brandVars, Eval: beval}}
+
+			Atoms[currentAtom].ColorRules = append(Atoms[currentAtom].ColorRules, newColorRule)
 		}
 	}
 

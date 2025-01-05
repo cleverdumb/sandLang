@@ -4,20 +4,25 @@ atom Empty alias E {
     }
 }
 
-atom Sand alias S {
+atom Blinker {
     section property {
         cdef render 1
-        cdef color #FFFFFF
+        cdef color dynamic
         cdef key s
         cdef size 1
+
+        def value 10
+    }
+    section color {
+        [value] < 150 => 255, 0, 0
+        [value] >= 150 => 0, 0, 255
     }
     section update {
-        match (0, 0, 2, 1) {
-            
+        match (0, 0, 0, 0) {
+
         }
-        -> {
-            pattern
-            x x
+        -> P-0.1 {
+            set [value] = ([value] + 1) % 255
         }
     }
 }
