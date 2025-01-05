@@ -2,6 +2,7 @@
 **All blocks are opened by `{` and closed with `}`**
 
 Comments start with `//` they are single lined and skipped entirely
+Anything between `/*` and `*/` will also be ignored as multiline comment
 
 **There must always be a `Empty` element**
 
@@ -30,8 +31,10 @@ There are three optional sections in an atom declaration
     Each atom gets an individual copy of the property\
     Keep these to a minimum to reduce memory usage
    - There are a couple special `cdef`
-     - `color` - defines color in `#RRGGBB` form (can be ignored if invisible)
+     - `color` - defines color in `#RRGGBB` form (can be ignored if invisible) or `dynamic` if dynamic coloring
      - `render` - not optional 0 = invisible, 1 = visible
+     - `key` - the key needed to press before placing the block. Use lowercase letters and numbers only
+     - `size` - the placed block size when you click (size = width = height)
 2) **Definition - Made with `section definition [block]`**
    - Where you define sets for use in rules
    - Syntax: `def [symbol] <Name1, Name2, ...>`
@@ -41,6 +44,13 @@ There are three optional sections in an atom declaration
 3) **Update - Made with `section update [block]`**
    - This is where rules are put
    - Rules are described below
+4) **Init - Made with `section init [block]`**
+   - This happens whenever a *change of type* happen
+   - Each line would be a step, similar to in an update block. All properties can only target the atom itself
+   - No pattern mapping can happen
+5) **Color - Made with `section color [block]`**
+   - Used for dynamic color rules which are described in more detail below
+   - the cdef of `color` in the *property* block must be set to `dynamic`
 
 
 ### Rules
@@ -123,6 +133,13 @@ The random number *x* will be created `min ≤ x < max`, with resolution of `ste
 The symbol is used such that identical random piece with same min, max, step and symbol will have the same value each time\
 A different symbol is needed to make the results different\
 For example all instances of `[$a'0'2'1]` will make the same 0 or 1, and `[$b'0'2'1]` will make a potentially different 0 or 1 to the ones with `a`
+
+### Dynamic coloring
+Each line in the *color* block has syntax of `[condition] => [red], [green], [blue]`\
+Each bit can be replaced with a maths statement, with *condition* must evaluate to true to be used\
+Red, green and blue must evaluate to an integer between 0 - 255 inclusive
+
+Tested from top to bottom, with the first line with true *condition* used
 
 ### Other features
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`
