@@ -1,3 +1,6 @@
+preload #FF0000
+preload #0000FF
+
 atom Empty alias E {
     section property {
         cdef render 0

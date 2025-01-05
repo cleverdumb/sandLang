@@ -160,6 +160,21 @@ func main() {
 		}
 	}
 
+	// fmt.Println(compile.GlobalData)
+
+	for _, p := range compile.GlobalData.Preload {
+		for r := uint16(p[0].R); r <= uint16(p[1].R); r++ {
+			for g := uint16(p[0].G); g <= uint16(p[1].G); g++ {
+				for b := uint16(p[0].B); b <= uint16(p[1].B); b++ {
+					// fmt.Println(r, g, b)
+					colorCache[compile.Color{R: uint8(r), G: uint8(g), B: uint8(b)}] = generateColorTexture(uint8(r), uint8(g), uint8(b))
+				}
+			}
+		}
+	}
+
+	// fmt.Println(colorCache)
+
 	for yi := uint16(0); yi < gh; yi++ {
 		for xi := uint16(0); xi < gw; xi++ {
 			// if yi < gh-1 {

@@ -15,5 +15,4 @@ Todo:
   ✔ Place method in sandLang - Key cdef @done(25-01-03 13:45)
   ✔ Optional pattern @done(25-01-04 15:43)
   ✔ Dynamic coloring @done(25-01-05 07:58)
-  ☐ Default coloring
-  ☐ Preload colors
+  ✔ Preload colors @done(25-01-05 10:14)

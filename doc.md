@@ -141,6 +141,12 @@ Red, green and blue must evaluate to an integer between 0 - 255 inclusive
 
 Tested from top to bottom, with the first line with true *condition* used
 
+Always put a line with statement `true` for a default color
+
+At the top of the file you can preload color for more efficient simulation by `preload [color] [color]?`\
+All colors with components all between the two colors will be preloaded. Only preload colors that are needed to save memory\
+The second color can be ignored. In that case only the first color will be loaded. Colors are in format #RRGGBB
+
 ### Other features
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`
 - Global rule sets can contain a set of rules to be inherited by other atoms for less redundancy. They are defined with `ruleset [name] [Block]` and the `[Block]` contains rules. Atoms have a higher priority over rule sets if they have the same name

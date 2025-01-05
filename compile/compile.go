@@ -16,7 +16,12 @@ func checkErr(e error) {
 	}
 }
 
+type Global struct {
+	Preload [][2]Color
+}
+
 var Atoms = make(map[string]*AtomRef)
+var GlobalData = Global{}
 
 type AtomRef struct {
 	Id           uint8
@@ -190,6 +195,26 @@ outsideLoop:
 			name := match[1]
 			currentGlobalRule = name
 
+		case strings.HasPrefix(l, "preload"):
+			split := reg["anySpace"].Split(l, 3)
+			from := parseColor(split[1])
+			// var to Color
+			if len(split) > 2 {
+				to := parseColor(split[2])
+				if to.R < from.R {
+					from.R, to.R = to.R, from.R
+				}
+				if to.G < from.G {
+					from.G, to.G = to.G, from.G
+				}
+				if to.B < from.B {
+					from.B, to.B = to.B, from.B
+				}
+				GlobalData.Preload = append(GlobalData.Preload, [2]Color{from, to})
+			} else {
+				GlobalData.Preload = append(GlobalData.Preload, [2]Color{from, from})
+			}
+
 		case l == "}":
 			if inRule == 1 {
 				inRule = 0
@@ -256,19 +281,9 @@ outsideLoop:
 				if split[2] == "dynamic" {
 					Atoms[currentAtom].DynamicColor = true
 				} else {
-					temp := reg["colorRGB"].FindStringSubmatch(v)
-					r, err := strconv.ParseUint(temp[1], 16, 8)
-					checkErr(err)
-
-					g, err := strconv.ParseUint(temp[2], 16, 8)
-					checkErr(err)
-
-					b, err := strconv.ParseUint(temp[3], 16, 8)
-					checkErr(err)
-
-					Atoms[currentAtom].Color = Color{uint8(r), uint8(g), uint8(b)}
+					Atoms[currentAtom].Color = parseColor(split[2])
 					if log {
-						fmt.Println(lineNum, "Set property color of", currentAtom, "to (", r, g, b, ")")
+						fmt.Println(lineNum, "Set property color of", currentAtom, "to (", Atoms[currentAtom].Color, ")")
 					}
 				}
 			} else if n == "key" {
@@ -552,6 +567,20 @@ outsideLoop:
 	// LogAtoms(Atoms)
 
 	return Atoms
+}
+
+func parseColor(s string) Color {
+	temp := reg["colorRGB"].FindStringSubmatch(s)
+	r, err := strconv.ParseUint(temp[1], 16, 8)
+	checkErr(err)
+
+	g, err := strconv.ParseUint(temp[2], 16, 8)
+	checkErr(err)
+
+	b, err := strconv.ParseUint(temp[3], 16, 8)
+	checkErr(err)
+
+	return Color{uint8(r), uint8(g), uint8(b)}
 }
 
 func LogAtoms(atoms map[string]*AtomRef) {
