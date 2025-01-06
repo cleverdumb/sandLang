@@ -93,6 +93,7 @@ Each line in the update block corresponds to a step of one of these:
 3) Setting a non-static property - `set [property] = [Maths statement]`
 4) `non-break` picks another rule to execute after this one, instead of choosing another random block
 5) Incrementing a property `inc [property] by [Increment (Maths statement)]` (Also decrements - ie negative increment)
+6) Clamping a variable between two values (inclusive) - `clamp [property] in [min], [max]` (min and max are maths statement)
 
 The entire block can be replaced with `repeat effect` to repeat *update block* along with probability from the previous rule
 

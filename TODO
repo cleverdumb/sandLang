@@ -17,6 +17,6 @@ Todo:
   ✔ Dynamic coloring @done(25-01-05 07:58)
   ✔ Preload colors @done(25-01-05 10:14)
   ✔ Increment (and decrement) shorthand @done(25-01-06 16:13)
-  ☐ Clamping properties
+  ✔ Clamping properties @done(25-01-06 19:49)
   ☐ Dragging placement
   ☐ Default functions - eg random movement

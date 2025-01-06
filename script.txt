@@ -10,7 +10,7 @@ atom Gas alias G {
         cdef color dynamic
 
         cdef key g
-        cdef size 10
+        cdef size 1
 
         def temp 20
     }
@@ -72,18 +72,10 @@ atom Gas alias G {
         }
 
         match (0, 0, 0, 0) {
-            eval [temp] < 0
+            eval true
         }
         -> {
-            set [temp] = 0
-            non-break
-        }
-
-        match (0, 0, 0, 0) {
-            eval [temp] > 50
-        }
-        -> {
-            set [temp] = 50
+            clamp [temp] in 0, 50
             non-break
         }
     }

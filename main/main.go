@@ -49,8 +49,8 @@ void main() {
 ` + "\x00"
 
 const (
-	gw          = 100
-	gh          = 100
+	gw          = 10
+	gh          = 10
 	scrW        = 800
 	scrH        = 800
 	bw          = scrW / gw
@@ -267,7 +267,7 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// testUpdateX = boxX
 		// testUpdateY = boxY
 
-		// fmt.Printf("Cell %+v\n", grid[boxY][boxX])
+		fmt.Printf("Cell %+v\n", grid[boxY][boxX])
 		size := 5
 		if v, ok := atoms[idMap[newT]].ConstProp["size"]; ok {
 			size = int(v)
@@ -628,6 +628,22 @@ func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 			name := strings.Split(step.Name[0], "-")[0]
 			val := evaluateMath(step.Eval, step.Vars, step.RandVars, s, rx, ry, false)
 			grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] += float32(val.(float64))
+		case 3:
+			fallthrough
+		case 6:
+			name := strings.Split(step.Name[0], "-")[0]
+			val := float32(evaluateMath(step.Eval, step.Vars, step.RandVars, s, rx, ry, false).(float64))
+			// fmt.Println(val)
+			if step.Opcode == 3 {
+				if grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] < val {
+					grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = val
+				}
+			} else {
+				if grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] > val {
+					grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = val
+				}
+			}
+			// fmt.Println("P", grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name])
 		}
 	}
 }
