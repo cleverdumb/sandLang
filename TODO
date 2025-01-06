@@ -16,3 +16,4 @@ Todo:
   ✔ Optional pattern @done(25-01-04 15:43)
   ✔ Dynamic coloring @done(25-01-05 07:58)
   ✔ Preload colors @done(25-01-05 10:14)
+  ☐ Increment (and decrement) shorthand

@@ -55,10 +55,10 @@ const (
 	scrH        = 800
 	bw          = scrW / gw
 	bh          = scrH / gh
-	threadCount = 1
+	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 32 * time.Nanosecond
+	updateDelay = 200 * time.Nanosecond
 )
 
 var quadVertices = []float32{
@@ -73,6 +73,9 @@ var quadVertices = []float32{
 
 var program uint32
 var grid [gh][gw]cell
+var copyGrid [gh][gw]cell
+var copyingToBuffer sync.Mutex
+var rendering sync.Mutex
 
 var colorCache = make(map[compile.Color]uint32)
 
@@ -82,7 +85,7 @@ var revIdMap = make(map[string]uint8)
 var aliasMap = make(map[string]string)
 var placeKeys = make(map[rune]uint8)
 
-var zones [gh / 10][gw / 10]sync.Mutex
+var zones [gh / 10][gw / 10]sync.RWMutex
 
 type cell struct {
 	x uint16
@@ -185,6 +188,7 @@ func main() {
 			// 	grid[yi][xi] = *makeCell(xi, yi, 0)
 			// }
 			grid[yi][xi] = *makeCell(xi, yi, revIdMap["Empty"])
+			copyGrid[yi][xi] = *makeCell(xi, yi, revIdMap["Empty"])
 		}
 	}
 
@@ -207,7 +211,14 @@ func main() {
 		// Clear screen and draw the texture
 		// s := time.Now()
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		copyingToBuffer.Lock()
+		// s := time.Now()
+		copyToBuffer()
+		copyingToBuffer.Unlock()
 		drawAll()
+		// fmt.Println(time.Since(s))
+
 		window.SwapBuffers()
 		glfw.PollEvents()
 		// fmt.Println(time.Since(s))
@@ -288,6 +299,22 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 	}
 }
 
+func copyToBuffer() {
+	rendering.Lock()
+	for yi := range grid {
+		for xi := range grid[yi] {
+			copyGrid[yi][xi].prop = make(map[string]float32)
+			for k, v := range grid[yi][xi].prop {
+				copyGrid[yi][xi].prop[k] = v
+			}
+			copyGrid[yi][xi].t = grid[yi][xi].t
+		}
+		// copy(copyGrid[yi][:], grid[yi][:])
+	}
+	rendering.Unlock()
+	// fmt.Println(time.Since(s))
+}
+
 func updateThread(quit chan uint8) {
 outside:
 	for {
@@ -311,9 +338,12 @@ outside:
 				for dx := -1; dx <= 1; dx++ {
 					if zx+dx >= 0 && zx+dx < (gw/10) && zy+dy >= 0 && zy+dy < (gh/10) {
 						zones[zy+dy][zx+dx].Lock()
+						// fmt.Println("zlock", zx+dx, zy+dy, rx, ry)
 					}
 				}
 			}
+
+			copyingToBuffer.Lock()
 
 			if name, ok := idMap[grid[ry][rx].t]; ok {
 				ref := *atoms[name]
@@ -381,7 +411,7 @@ outside:
 					// fmt.Println(ref.ConstProp)
 
 					for _, con := range rule.MatchCon {
-						res := evaluateMath(con.Expr, con.Names, con.RandVars, s, rx, ry)
+						res := evaluateMath(con.Expr, con.Names, con.RandVars, s, rx, ry, false)
 
 						// fmt.Println(res)
 
@@ -420,9 +450,11 @@ outside:
 				for dx := -1; dx <= 1; dx++ {
 					if zx+dx >= 0 && zx+dx < (gw/10) && zy+dy >= 0 && zy+dy < (gh/10) {
 						zones[zy+dy][zx+dx].Unlock()
+						// fmt.Println("zunlock", zx+dx, zy+dy)
 					}
 				}
 			}
+			copyingToBuffer.Unlock()
 			// fmt.Println(time.Since(s))
 
 			time.Sleep(updateDelay)
@@ -452,7 +484,7 @@ func doInit(x, y int, t uint8) {
 		switch step.Opcode {
 		case 5:
 			name := step.Name[0]
-			res := evaluateMath(step.Eval, step.Vars, step.RandVars, 0, x, y)
+			res := evaluateMath(step.Eval, step.Vars, step.RandVars, 0, x, y, false)
 
 			grid[y][x].prop[name] = float32(res.(float64))
 		}
@@ -558,6 +590,7 @@ out:
 
 func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 	// fmt.Println("o", ox, oy)
+	// fmt.Println("DO STEP")
 	steps := rule.Steps
 	localSymbols := make(map[string]cell)
 
@@ -587,7 +620,7 @@ func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 		case 1:
 			name := strings.Split(step.Name[0], "-")[0]
 			// nx, ny := step.Operand[0], step.Operand[1]
-			val := evaluateMath(step.Eval, step.Vars, step.RandVars, s, rx, ry)
+			val := evaluateMath(step.Eval, step.Vars, step.RandVars, s, rx, ry, false)
 			// fmt.Println(val)
 			// fmt.Println(ox+cx, oy+cy, "cxy", cx, cy)
 			grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = float32(val.(float64))
@@ -600,7 +633,7 @@ func randFromRange(l [3]float64) float64 {
 	return l[0] + l[2]*float64(rand.Intn(amount))
 }
 
-func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int, randVars map[string][3]float64, s int, rx, ry int) interface{} {
+func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int, randVars map[string][3]float64, s int, rx, ry int, useCopy bool) interface{} {
 	// ox, oy absolute position of symbol x
 	param := make(map[string]interface{})
 	inc := make(map[string]int)
@@ -617,9 +650,17 @@ func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int,
 		name := strings.Split(n, "-")[0]
 		// fmt.Println("name", name, "txy", tx, ty, "rxy", rx, ry, n, grid[ty][tx], "expr", expr)
 		// fmt.Println("l", l)
-		if v, ok := grid[ty][tx].prop[name]; ok {
+		var target cell
+		if useCopy {
+			target = copyGrid[ty][tx]
+			// fmt.Println("Marker")
+		} else {
+			target = grid[ty][tx]
+		}
+
+		if v, ok := target.prop[name]; ok {
 			param[n] = float64(v)
-		} else if v, ok := atoms[idMap[grid[ty][tx].t]].ConstProp[name]; ok {
+		} else if v, ok := atoms[idMap[target.t]].ConstProp[name]; ok {
 			param[n] = float64(v)
 		}
 	}
@@ -706,6 +747,7 @@ func applyPattern(rule compile.Rule, ox, oy int, symbols map[string]cell, s int)
 			}
 		}
 	}
+	// fmt.Println("END OF APPLY PATTERN")
 	// fmt.Printf("FF: %+v\n", grid[4][4])
 }
 
@@ -720,11 +762,16 @@ func makeCell(x, y uint16, t uint8) *cell {
 }
 
 func drawAll() {
-	for yi := range grid {
-		for xi := range grid[yi] {
-			grid[yi][xi].drawCell()
+	rendering.Lock()
+	for yi := range copyGrid {
+		for xi := range copyGrid[yi] {
+			// regX, regY := int(xi/10), int(yi/10)
+			// zones[regY][regX].Lock()
+			copyGrid[yi][xi].drawCell()
+			// zones[regY][regX].Unlock()
 		}
 	}
+	rendering.Unlock()
 }
 
 func genVao(x, y uint16) uint32 {
@@ -771,13 +818,17 @@ func draw(textureID, vao uint32) {
 }
 
 func (c cell) drawCell() {
-	regX, regY := int(c.x/10), int(c.y/10)
-	zones[regY][regX].Lock()
+	// fmt.Println("RLOCK")
 	if id, ok := idMap[c.t]; ok {
 		if atoms[id].ConstProp["render"] == 1 {
+			// fmt.Println("id", id, atoms[id].ConstProp["render"])
+			// fmt.Printf("c %+v\n", c)
 			var col compile.Color
 			if atoms[id].DynamicColor {
 				// fmt.Println(c, id)
+				// fmt.Printf("c %+v\n", c)
+				// fmt.Printf("c c %+v\n", grid[c.y][c.x])
+
 				col = computeColor(atoms[id].ColorRules, int(c.x), int(c.y))
 			} else {
 				// fmt.Println("MARKER")
@@ -792,15 +843,22 @@ func (c cell) drawCell() {
 			}
 		}
 	}
-	zones[regY][regX].Unlock()
+
+	// fmt.Println("RUNLOCK")
 }
 
 func computeColor(rules []compile.ColorRule, x, y int) compile.Color {
+	// fmt.Println("START COMPUTE COLOR")
+	// fmt.Printf("c %+v\n", grid[y][x])
 	for _, r := range rules {
-		conRes := evaluateMath(r.Cond.Expr, r.Cond.Names, r.Cond.RandVars, 0, x, y)
+		conRes := evaluateMath(r.Cond.Expr, r.Cond.Names, r.Cond.RandVars, 0, x, y, true)
 		if conRes == true {
 			// fmt.Println(r.Col.R)
-			return compile.Color{R: uint8(evaluateMath(r.Col.R.Eval, r.Col.R.Vars, r.Col.R.RandVars, 0, x, y).(float64)), G: uint8(evaluateMath(r.Col.G.Eval, r.Col.G.Vars, r.Col.G.RandVars, 0, x, y).(float64)), B: uint8(evaluateMath(r.Col.B.Eval, r.Col.B.Vars, r.Col.B.RandVars, 0, x, y).(float64))}
+			rval := uint8(evaluateMath(r.Col.R.Eval, r.Col.R.Vars, r.Col.R.RandVars, 0, x, y, true).(float64))
+			gval := uint8(evaluateMath(r.Col.G.Eval, r.Col.G.Vars, r.Col.G.RandVars, 0, x, y, true).(float64))
+			bval := uint8(evaluateMath(r.Col.B.Eval, r.Col.B.Vars, r.Col.B.RandVars, 0, x, y, true).(float64))
+			// fmt.Println(rval)
+			return compile.Color{R: rval, G: gval, B: bval}
 		}
 	}
 	return compile.Color{R: uint8(0), G: uint8(0), B: uint8(0)}

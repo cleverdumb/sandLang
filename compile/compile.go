@@ -121,7 +121,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["fromArrow"] = regexp.MustCompile(`->\s*(P\s*-\s*([\d\.]*))?\s*{`)
 	reg["fromInherit"] = regexp.MustCompile(`inherit\s+([a-zA-Z0-9]*)\s*(.*)?`)
 	reg["getEvalBracket"] = regexp.MustCompile(`\[([a-zA-Z0-9]*\s*(-\s*([0-9]+)\s*,\s*([0-9]+)\s*)?)\]`)
-	reg["getRandomBracket"] = regexp.MustCompile(`\[\$([a-zA-Z0-9]+)'([\d\.]+)'([\d\.]+)'([\d\.]+)\]`)
+	reg["getRandomBracket"] = regexp.MustCompile(`\[\$([a-zA-Z0-9]+)'([\d\.\-]+)'([\d\.\-]+)'([\d\.\-]+)\]`)
 	reg["modifyFlag"] = regexp.MustCompile(`-([a-zA-Z]+)=(.*)`)
 	reg["fromRuleset"] = regexp.MustCompile(`ruleset\s+([a-zA-Z0-9]+)\s+{`)
 	reg["spacedArrow"] = regexp.MustCompile(`\s*=>\s*`)
@@ -194,6 +194,7 @@ outsideLoop:
 			match := reg["fromRuleset"].FindStringSubmatch(l)
 			name := match[1]
 			currentGlobalRule = name
+			fmt.Println("currentGlobalRule", currentGlobalRule)
 
 		case strings.HasPrefix(l, "preload"):
 			split := reg["anySpace"].Split(l, 3)
@@ -233,6 +234,7 @@ outsideLoop:
 					Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
 				} else {
 					globalRules[currentGlobalRule] = append(globalRules[currentGlobalRule], newRule)
+					fmt.Println("newRule", newRule)
 				}
 				inPattern = false
 				newRule = Rule{}
@@ -323,7 +325,7 @@ outsideLoop:
 				}
 			}
 
-		case sections["update"]:
+		case sections["update"] || currentGlobalRule != "":
 			if inPattern && patternLineCount > 0 {
 				split := reg["anySpace"].Split(l, int(newRule.W))
 				if inRule == 1 {
@@ -424,6 +426,7 @@ outsideLoop:
 						}
 					}
 					target := make([]Rule, 1)
+					fmt.Println(globalRules)
 					if v, ok := Atoms[name]; ok {
 						target = v.Rules
 					} else if v, ok := globalRules[name]; ok {
