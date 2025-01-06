@@ -624,6 +624,10 @@ func doSteps(rule compile.Rule, ox, oy int, s int, rx, ry int) {
 			// fmt.Println(val)
 			// fmt.Println(ox+cx, oy+cy, "cxy", cx, cy)
 			grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] = float32(val.(float64))
+		case 2:
+			name := strings.Split(step.Name[0], "-")[0]
+			val := evaluateMath(step.Eval, step.Vars, step.RandVars, s, rx, ry, false)
+			grid[ry+int(step.Operand[1])*(1-((s&symY)>>1)*2)][rx+int(step.Operand[0])*(1-(s&symX)*2)].prop[name] += float32(val.(float64))
 		}
 	}
 }

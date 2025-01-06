@@ -78,13 +78,12 @@ type Rule struct {
 }
 
 // opcode:
-// 0 - set
-// 1 - change [name[0]] by [0]
-// 2 - clamp [name[0]] into [0] and [1] ([0] < [1])
-// 3 - randomise [name[0]] between [0] and [1] ([0] < [1]), steps [2]
+// 1 - set
+// 2 - change [name[0]] by [0]
+// 3 - clamp [name[0]] into [0] and [1] ([0] < [1])
 // 4 - map to pattern
 // 5 - set symbol [name[0]] to cell at coord [1][0]
-// 6 - remember names [name[0], name[1], ...] at coord [1][0]
+
 type Step struct {
 	Opcode   uint8
 	Name     []string
@@ -125,6 +124,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["modifyFlag"] = regexp.MustCompile(`-([a-zA-Z]+)=(.*)`)
 	reg["fromRuleset"] = regexp.MustCompile(`ruleset\s+([a-zA-Z0-9]+)\s+{`)
 	reg["spacedArrow"] = regexp.MustCompile(`\s*=>\s*`)
+	reg["spacedBy"] = regexp.MustCompile(`\s+by\s+`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	inComment := false
@@ -525,6 +525,27 @@ outsideLoop:
 					newRule.Steps = append(newRule.Steps, Step{Opcode: 1, Name: []string{n[1 : len(n)-1]}, Eval: eval, Vars: vars, Operand: operand, RandVars: randVars})
 				} else if strings.HasPrefix(l, "non-break") {
 					newRule.DontBreak = true
+				} else if strings.HasPrefix(l, "inc") {
+					split := reg["spacedBy"].Split(l, -1)
+					n := strings.TrimSpace(split[0][4:])
+					splitn := reg["getEvalBracket"].FindStringSubmatch(n)[1:]
+					var operand []float64
+					if len(splitn) > 3 && splitn[2] != "" {
+						ox, err := strconv.Atoi(splitn[2])
+						checkErr(err)
+
+						oy, err := strconv.Atoi(splitn[3])
+						checkErr(err)
+
+						operand = []float64{float64(ox) - float64(newRule.Ox), float64(oy) - float64(newRule.Oy)}
+						// fmt.Println("operand", operand, "n", n)
+					} else {
+						operand = []float64{0, 0}
+					}
+					expr := split[1]
+					vars, randVars, eval := compileMath(expr, int(newRule.Ox), int(newRule.Oy), false)
+
+					newRule.Steps = append(newRule.Steps, Step{Opcode: 2, Name: []string{n[1 : len(n)-1]}, Eval: eval, Vars: vars, Operand: operand, RandVars: randVars})
 				}
 			}
 

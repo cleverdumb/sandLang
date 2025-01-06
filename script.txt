@@ -36,8 +36,8 @@ atom Gas alias G {
             x G
         }
         -> {
-            set [temp] = [temp] - 1
-            set [temp-1,0] = [temp-1,0] + 1
+            inc [temp] by -1
+            inc [temp-1,0] by 1
         }
 
         match (0, 0, 1, 2) sym(y) {
@@ -59,15 +59,15 @@ atom Gas alias G {
             G
         }
         -> {
-            set [temp] = [temp] - 1
-            set [temp-0,1] = [temp-0,1] + 1
+            inc [temp] by -1
+            inc [temp-0,1] by 1
         }
 
         match (0, 0, 0, 0) {
             eval [temp] > 0
         }
         -> P-0.003 {
-            set [temp] = [temp] - 1
+            inc [temp] by -1
             non-break
         }
 
@@ -115,7 +115,7 @@ ruleset TemperatureMod {
         x G
     }
     -> {
-        set [temp-1,0] = [temp-1,0] + [mod]
+        inc [temp-1,0] by [mod]
         pattern
         _ /
     }
@@ -126,7 +126,7 @@ ruleset TemperatureMod {
         G
     }
     -> {
-        set [temp-0,1] = [temp-0,1] + [mod]
+        inc [temp-0,1] by [mod]
         pattern
         _
         /
