@@ -90,8 +90,9 @@ An update block is defined in this way:\
 Each line in the update block corresponds to a step of one of these:
 1) Defining a symbol to be a cell at a certain position, at the time of execution of this command - `def [symbol] = pick([x], [y])` eg `def L = pick(1, 1)` defines `L` to be the cell at `(1, 1)`
 2) Mapping onto pattern - `pattern` followed by the *pattern*
-3) Setting a non-static property - `set [property] [Maths statement]`
+3) Setting a non-static property - `set [property] = [Maths statement]`
 4) `non-break` picks another rule to execute after this one, instead of choosing another random block
+5) Incrementing a property `inc [property] by [Increment (Maths statement)]` (Also decrements - ie negative increment)
 
 The entire block can be replaced with `repeat effect` to repeat *update block* along with probability from the previous rule
 

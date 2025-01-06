@@ -16,6 +16,7 @@ Todo:
   ✔ Optional pattern @done(25-01-04 15:43)
   ✔ Dynamic coloring @done(25-01-05 07:58)
   ✔ Preload colors @done(25-01-05 10:14)
-  ☐ Increment (and decrement) shorthand
+  ✔ Increment (and decrement) shorthand @done(25-01-06 16:13)
   ☐ Clamping properties
   ☐ Dragging placement
+  ☐ Default functions - eg random movement
