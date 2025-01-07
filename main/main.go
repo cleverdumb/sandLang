@@ -49,8 +49,8 @@ void main() {
 ` + "\x00"
 
 const (
-	gw          = 10
-	gh          = 10
+	gw          = 100
+	gh          = 100
 	scrW        = 800
 	scrH        = 800
 	bw          = scrW / gw
@@ -267,7 +267,7 @@ func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw
 		// testUpdateX = boxX
 		// testUpdateY = boxY
 
-		fmt.Printf("Cell %+v\n", grid[boxY][boxX])
+		// fmt.Printf("Cell %+v\n", grid[boxY][boxX])
 		size := 5
 		if v, ok := atoms[idMap[newT]].ConstProp["size"]; ok {
 			size = int(v)
