@@ -152,6 +152,7 @@ The second color can be ignored. In that case only the first color will be loade
 ### Other features
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`
 - Global rule sets can contain a set of rules to be inherited by other atoms for less redundancy. They are defined with `ruleset [name] [Block]` and the `[Block]` contains rules. Atoms have a higher priority over rule sets if they have the same name
+- Default value of property can be defined with `default [symbol] [value]` at the start of file. These can be used to ensure that all cells have a certain property (or it will error if it tries to access non-existent properties)
 
 ### Examples
 #### Sand

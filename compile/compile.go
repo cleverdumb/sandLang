@@ -17,7 +17,8 @@ func checkErr(e error) {
 }
 
 type Global struct {
-	Preload [][2]Color
+	Preload  [][2]Color
+	Defaults map[string]float32
 }
 
 var Atoms = make(map[string]*AtomRef)
@@ -145,6 +146,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	newRule := Rule{}
 	globalSets := make(map[string][]string)
 	globalRules := make(map[string][]Rule)
+	GlobalData.Defaults = make(map[string]float32)
 	currentGlobalRule := ""
 outsideLoop:
 	for lineNum, l := range strings.Split(string(f), "\n") {
@@ -217,6 +219,14 @@ outsideLoop:
 			} else {
 				GlobalData.Preload = append(GlobalData.Preload, [2]Color{from, from})
 			}
+
+		case strings.HasPrefix(l, "default"):
+			split := reg["anySpace"].Split(l, -1)
+			n, v := split[1], split[2]
+			num, err := strconv.ParseFloat(v, 32)
+			checkErr(err)
+
+			GlobalData.Defaults[n] = float32(num)
 
 		case l == "}":
 			if inRule == 1 {

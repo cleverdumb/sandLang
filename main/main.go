@@ -682,6 +682,8 @@ func evaluateMath(expr *govaluate.EvaluableExpression, vars map[string][][2]int,
 			param[n] = float64(v)
 		} else if v, ok := atoms[idMap[target.t]].ConstProp[name]; ok {
 			param[n] = float64(v)
+		} else if v, ok := compile.GlobalData.Defaults[name]; ok {
+			param[n] = float64(v)
 		}
 	}
 
