@@ -348,6 +348,76 @@ outside:
 			if name, ok := idMap[grid[ry][rx].t]; ok {
 				ref := *atoms[name]
 
+				for i, v := range ref.AlwaysRules {
+					rule := v
+					// fmt.Println(rule)
+
+					if rand.Float64() > rule.Prob {
+						continue
+					}
+					ruleApply := true
+
+					var ox, oy int
+					s := 0
+					if !(rule.XSym && rand.Intn(2) == 0) {
+						ox = rx - int(rule.Ox)
+					} else {
+						// ox = rx + int(rule.Ox) - int(rule.W)
+						ox = rx - (int(rule.W) - int(rule.Ox) - 1)
+						s |= symX
+					}
+
+					if !(rule.YSym && rand.Intn(2) == 0) {
+						oy = ry - int(rule.Oy)
+					} else {
+						// fmt.Println("YSym")
+						oy = ry - (int(rule.H) - int(rule.Oy) - 1)
+						s |= symY
+					}
+
+					// fmt.Println(rule.XSym, rule.YSym, rand.Intn(2))
+
+					// fmt.Printf("ox: %v, oy: %v, s: %v\n", ox, oy, s)
+
+					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
+					if !rule.NoMatchPattern {
+						if !matchRule(ref, ox, oy, i, s) {
+							ruleApply = false
+							continue
+						}
+					}
+
+					// fmt.Println(ref.ConstProp)
+
+					for _, con := range rule.MatchCon {
+						res := evaluateMath(con.Expr, con.Names, con.RandVars, s, rx, ry, false)
+
+						// fmt.Println(res)
+
+						if res == false {
+							ruleApply = false
+							break
+						}
+					}
+
+					if !ruleApply {
+						// if !rule.DontBreak {
+						// 	break
+						// } else {
+						// 	continue
+						// }
+						continue
+					}
+
+					if ruleApply {
+						// fmt.Println("APPLYING")
+						doSteps(rule, ox, oy, s, rx, ry)
+						// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
+						// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
+						// }
+					}
+				}
+
 				// if len(ref.Rules) > 0 {
 				for _, v := range rand.Perm(len(ref.Rules)) {
 					// ind := rand.Intn(len(ref.Rules))
@@ -398,12 +468,6 @@ outside:
 					if !rule.NoMatchPattern {
 						if !matchRule(ref, ox, oy, ind, s) {
 							ruleApply = false
-							// fmt.Println("ruleApply:", ruleApply)
-							// if !rule.DontBreak {
-							// 	break
-							// } else {
-							// 	continue
-							// }
 							continue
 						}
 					}

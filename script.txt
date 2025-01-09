@@ -1,142 +1,21 @@
-global G <^W>
-default flammable 0
-
 atom Empty alias E {
     section property {
         cdef render 0
     }
 }
 
-ruleset TemperatureMod {
-    match (0, 0, 2, 1) sym(x) {
-        pattern
-        x G
-    }
-    -> {
-        set [temp-1,0] = [temp-1,0] + [mod]
-        pattern
-        _ /
-    }
-
-    match (0, 0, 1, 2) sym(y) {
-        pattern
-        x
-        G
-    }
-    -> {
-        set [temp-0,1] = [temp-0,1] + [mod]
-        pattern
-        _
-        /
-    }
-}
-
-atom Heat alias H {
-    section property {
-        cdef render 1
-        cdef color #FF0000
-
-        cdef key h
-        cdef size 1
-
-        def temp 40
-        cdef mod 10
-    }
-    section update {
-        inherit TemperatureMod
-    }
-}
-
-atom Wood alias W {
-    section property {
-        cdef render 1
-        cdef color #523A34
-        cdef flammable 1 
-        cdef key w
-        cdef size 10
-
-        def temp 0
-    }
-    section update {
-        match (0, 0, 1, 1) {
-            eval [temp] > 10
-        }
-        -> {
-            pattern
-            F
-        }
-    }
-}
-
-atom Fire alias F {
+atom Test alias T {
     section property {
         cdef render 1
         cdef color dynamic
-        def lifetime 10
+        cdef key t
+        cdef size 5
+
+        def test 0
     }
     section color {
-        [$a'1'11'1] > 5 => 242, 233, 78
-        true => 234, 140, 85
-    }
-    section init {
-        set [lifetime] = [$a'20'40'1]
-    }
-    section update {
-        match (0, 0, 1, 1) {
-            eval [lifetime] <= 0
-        }
-        -> {
-            pattern
-            A
-        }
-
-        match (0, 0, 1, 1) {
-            
-        }
-        -> P-0.1 {
-            inc [lifetime] by -1
-        }
-
-        match (0, 0, 2, 1) sym(x) {
-            eval [flammable-1,0] == 1
-            pattern
-            x n
-        }
-        -> P-0.1 {
-            pattern
-            x F
-        }
-
-        match (0, 0, 1, 2) sym(y) {
-            eval [flammable-1,0] == 1
-            pattern
-            x
-            n
-        }
-        -> P-0.1 {
-            pattern
-            x
-            F
-        }
-
-        match (0, 0, 2, 2) sym(xy) {
-            eval [flammable-1,0] == 1
-            pattern
-            x *
-            * n
-        }
-        -> P-0.1 {
-            pattern
-            x /
-            / F
-        }
-    }
-}
-
-atom Ash alias A {
-    section property {
-        cdef render 1
-        cdef color #FFFFFF
+        true => [test], [test], [test]
+        // true => 255, 0, 0
     }
     section update {
         match (0, 0, 1, 2) {
@@ -150,15 +29,13 @@ atom Ash alias A {
             x
         }
 
-        match (0, 0, 2, 2) sym(x) {
-            pattern
-            x *
-            n _
+        match (0, 0, 1, 1) {
+            
         }
         -> {
-            pattern
-            _ /
-            / x
+            inc [test] by 1
+            set [test] = [test] % 255
+            always-run
         }
     }
 }

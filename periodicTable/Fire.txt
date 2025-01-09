@@ -1,9 +1,9 @@
 global G <^W>
+default flammable 0
 
 atom Empty alias E {
     section property {
         cdef render 0
-        cdef flammable 0
     }
 }
 
@@ -35,8 +35,6 @@ atom Heat alias H {
     section property {
         cdef render 1
         cdef color #FF0000
-
-        cdef flammable 0
 
         cdef key h
         cdef size 1
@@ -74,7 +72,6 @@ atom Fire alias F {
     section property {
         cdef render 1
         cdef color dynamic
-        cdef flammable 0
         def lifetime 10
     }
     section color {
@@ -140,7 +137,6 @@ atom Ash alias A {
     section property {
         cdef render 1
         cdef color #FFFFFF
-        cdef flammable 0
     }
     section update {
         match (0, 0, 1, 2) {

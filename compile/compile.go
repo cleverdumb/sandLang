@@ -32,6 +32,7 @@ type AtomRef struct {
 	ConstProp    map[string]float32
 	Def          map[string][]string
 	Rules        []Rule
+	AlwaysRules  []Rule
 	Alias        string
 	Init         []Step
 	DynamicColor bool
@@ -148,6 +149,8 @@ func CompileScript(log bool) map[string]*AtomRef {
 	globalRules := make(map[string][]Rule)
 	GlobalData.Defaults = make(map[string]float32)
 	currentGlobalRule := ""
+	toAlwaysArray := false
+	lastRuleAlways := false
 outsideLoop:
 	for lineNum, l := range strings.Split(string(f), "\n") {
 		l = strings.TrimSpace(l)
@@ -242,8 +245,12 @@ outsideLoop:
 			}
 			if inRule == 2 {
 				inRule = 0
-				if currentGlobalRule == "" {
+				if toAlwaysArray {
+					Atoms[currentAtom].AlwaysRules = append(Atoms[currentAtom].AlwaysRules, newRule)
+					lastRuleAlways = true
+				} else if currentGlobalRule == "" {
 					Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
+					lastRuleAlways = false
 				} else {
 					globalRules[currentGlobalRule] = append(globalRules[currentGlobalRule], newRule)
 					fmt.Println("newRule", newRule)
@@ -455,7 +462,12 @@ outsideLoop:
 					}
 				} else if strings.HasPrefix(l, "repeat") {
 					p2 := reg["anySpace"].Split(l, -1)[1]
-					prev := Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1]
+					var prev Rule
+					if !lastRuleAlways {
+						prev = Atoms[currentAtom].Rules[len(Atoms[currentAtom].Rules)-1]
+					} else {
+						prev = Atoms[currentAtom].AlwaysRules[len(Atoms[currentAtom].Rules)-1]
+					}
 					if p2 == "match" {
 						newRule.Id = newRuleId
 						newRule.MatchCon = prev.MatchCon
@@ -473,8 +485,12 @@ outsideLoop:
 						newRule.Prob = prev.Prob
 
 						// inRule = 0
-						if currentGlobalRule == "" {
+						if toAlwaysArray {
+							Atoms[currentAtom].AlwaysRules = append(Atoms[currentAtom].AlwaysRules, newRule)
+							lastRuleAlways = true
+						} else if currentGlobalRule == "" {
 							Atoms[currentAtom].Rules = append(Atoms[currentAtom].Rules, newRule)
+							lastRuleAlways = false
 						} else {
 							globalRules[currentGlobalRule] = append(globalRules[currentGlobalRule], newRule)
 						}
@@ -537,6 +553,8 @@ outsideLoop:
 					newRule.Steps = append(newRule.Steps, Step{Opcode: 1, Name: []string{n[1 : len(n)-1]}, Eval: eval, Vars: vars, Operand: operand, RandVars: randVars})
 				} else if strings.HasPrefix(l, "non-break") {
 					newRule.DontBreak = true
+				} else if strings.HasPrefix(l, "always-run") {
+					toAlwaysArray = true
 				} else if strings.HasPrefix(l, "inc") {
 					split := reg["spacedBy"].Split(l, -1)
 					n := strings.TrimSpace(split[0][4:])
