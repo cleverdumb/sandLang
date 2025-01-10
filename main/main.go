@@ -59,6 +59,7 @@ const (
 	symX        = 1 << 0
 	symY        = 1 << 1
 	updateDelay = 200 * time.Nanosecond
+	placeCD     = 2
 )
 
 var quadVertices = []float32{
@@ -86,6 +87,8 @@ var aliasMap = make(map[string]string)
 var placeKeys = make(map[rune]uint8)
 
 var zones [gh / 10][gw / 10]sync.RWMutex
+
+var tryPlaceCoolDown = 0
 
 type cell struct {
 	x uint16
@@ -221,6 +224,14 @@ func main() {
 
 		window.SwapBuffers()
 		glfw.PollEvents()
+
+		if keyDown {
+			tryPlaceCoolDown--
+			if tryPlaceCoolDown <= 0 {
+				tryPlace(window)
+				tryPlaceCoolDown = placeCD
+			}
+		}
 		// fmt.Println(time.Since(s))
 		// time.Sleep(1000 / 60 * time.Millisecond)
 	}
@@ -236,63 +247,41 @@ func keyPress(window *glfw.Window, char rune) {
 }
 
 // var testUpdateX, testUpdateY int
+var keyDown bool
 
 func click(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	if button == glfw.MouseButton1 && action == glfw.Press {
-		newT := uint8(0)
-		// switch {
-		// case keyMap[glfw.KeyS]:
-		// 	newT = revIdMap["Slime"]
-		// case keyMap[glfw.KeyW]:
-		// 	newT = revIdMap["Water"]
-		// case keyMap[glfw.KeyO]:
-		// 	newT = revIdMap["Oil"]
-		// case keyMap[glfw.Key1]:
-		// 	newT = revIdMap["Test1"]
-		// case keyMap[glfw.Key2]:
-		// 	newT = revIdMap["Test2"]
-		// case keyMap[glfw.Key3]:
-		// 	newT = revIdMap["Test3"]
-		// case keyMap[glfw.Key4]:
-		// 	newT = revIdMap["Test4"]
-		// }
+		keyDown = true
+	} else if button == glfw.MouseButton1 && action == glfw.Release {
+		keyDown = false
+	}
+}
 
-		if t, ok := placeKeys[currentKey]; ok {
-			newT = t
-		}
+func tryPlace(w *glfw.Window) {
+	newT := uint8(0)
 
-		posX, posY := w.GetCursorPos()
-		boxX, boxY := int(posX/bw), int(posY/bh)
+	if t, ok := placeKeys[currentKey]; ok {
+		newT = t
+	}
 
-		// testUpdateX = boxX
-		// testUpdateY = boxY
+	posX, posY := w.GetCursorPos()
+	boxX, boxY := int(posX/bw), int(posY/bh)
 
-		// fmt.Printf("Cell %+v\n", grid[boxY][boxX])
-		size := 5
-		if v, ok := atoms[idMap[newT]].ConstProp["size"]; ok {
-			size = int(v)
-		}
-		for y := 0; y < size; y++ {
-			for x := 0; x < size; x++ {
-				// for y := 0; y < 1; y++ {
-				// 	for x := 0; x < 1; x++ {
-				if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
-					if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
-						changeType(boxX+x, boxY+y, newT)
-						// if mod == glfw.ModControl {
-						// 	changeType(boxX+x, boxY+y, revIdMap["Test3"])
-						// } else if mod == glfw.ModShift {
-						// 	changeType(boxX+x, boxY+y, revIdMap["Slime"])
-						// } else if mod == glfw.ModAlt {
-						// 	changeType(boxX+x, boxY+y, revIdMap["Oil"])
-						// } else if mod == glfw.ModCapsLock {
-						// 	changeType(boxX+x, boxY+y, revIdMap["Test1"])
-						// } else if button == glfw.MouseButton2 {
-						// 	changeType(boxX+x, boxY+y, revIdMap["Test2"])
-						// } else {
-						// 	changeType(boxX+x, boxY+y, revIdMap["Water"])
-						// }
-					}
+	// testUpdateX = boxX
+	// testUpdateY = boxY
+
+	// fmt.Printf("Cell %+v\n", grid[boxY][boxX])
+	size := 5
+	if v, ok := atoms[idMap[newT]].ConstProp["size"]; ok {
+		size = int(v)
+	}
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			// for y := 0; y < 1; y++ {
+			// 	for x := 0; x < 1; x++ {
+			if boxX+x >= 0 && boxX+x < gw && boxY+y >= 0 && boxY+y < gh {
+				if grid[boxY+y][boxX+x].t == revIdMap["Empty"] {
+					changeType(boxX+x, boxY+y, newT)
 				}
 			}
 		}
