@@ -1,10 +1,11 @@
-*In this guide's code blocks, `keyword`, `[replace inside]`, `(Optional)?`*\
+*In this guide's code blocks, `keyword`, `[replace inside]`, `(Optional)?`*
+
 **All blocks are opened by `{` and closed with `}`**
 
 Comments start with `//` they are single lined and skipped entirely
 Anything between `/*` and `*/` will also be ignored as multiline comment
 
-**There must always be a `Empty` element**
+**There must always be a `Empty` element as it is used in internal mechanics**
 
 `atom` starts an atom declaration with this syntax\
 `atom [name] (alias [Symbol])? [Block]`
@@ -94,6 +95,7 @@ Each line in the update block corresponds to a step of one of these:
 4) `non-break` picks another rule to execute after this one, instead of choosing another random block
 5) Incrementing a property `inc [property] by [Increment (Maths statement)]` (Also decrements - ie negative increment)
 6) Clamping a variable between two values (inclusive) - `clamp [property] in [min], [max]` (min and max are maths statement)
+7) `always-run` makes the rule ran everytime the cell is picked. They always run before other rules, and all rules with this tag is ran, then one of the normal rules is picked. Do not move the `x` in these rules - Other rules will still be centered on the original centre
 
 The entire block can be replaced with `repeat effect` to repeat *update block* along with probability from the previous rule
 
@@ -153,6 +155,7 @@ The second color can be ignored. In that case only the first color will be loade
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`
 - Global rule sets can contain a set of rules to be inherited by other atoms for less redundancy. They are defined with `ruleset [name] [Block]` and the `[Block]` contains rules. Atoms have a higher priority over rule sets if they have the same name
 - Default value of property can be defined with `default [symbol] [value]` at the start of file. These can be used to ensure that all cells have a certain property (or it will error if it tries to access non-existent properties)
+- Press `/` to clear the world
 
 ### Examples
 #### Sand

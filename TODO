@@ -18,10 +18,10 @@ Todo:
   ✔ Preload colors @done(25-01-05 10:14)
   ✔ Increment (and decrement) shorthand @done(25-01-06 16:13)
   ✔ Clamping properties @done(25-01-06 19:49)
-  ☐ Dragging placement
+  ✔ Dragging placement @done(25-01-10 13:30)
   ☐ Default functions - eg random movement
   ✔ Property default @done(25-01-08 18:36)
   ☐ Conditionless rule
   ✔ Always activated rule @done(25-01-09 16:32)
-  ☐ Clear hotkey
+  ✔ Clear hotkey @done(25-01-10 16:12)
   ☐ Configure in sandlang - eg drag cd

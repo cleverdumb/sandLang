@@ -242,7 +242,15 @@ func main() {
 var currentKey rune
 
 func keyPress(window *glfw.Window, char rune) {
-	currentKey = char
+	if char == '/' {
+		for yi := range grid {
+			for xi := range grid[yi] {
+				changeType(xi, yi, revIdMap["Empty"])
+			}
+		}
+	} else {
+		currentKey = char
+	}
 	// fmt.Println(currentKey)
 }
 
