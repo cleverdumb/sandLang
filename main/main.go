@@ -59,7 +59,7 @@ const (
 	symX        = 1 << 0
 	symY        = 1 << 1
 	updateDelay = 200 * time.Nanosecond
-	placeCD     = 2
+	// placeCD     = 2
 )
 
 var quadVertices = []float32{
@@ -226,10 +226,16 @@ func main() {
 		glfw.PollEvents()
 
 		if keyDown {
-			tryPlaceCoolDown--
-			if tryPlaceCoolDown <= 0 {
+			tryPlaceCoolDown++
+			var limit int
+			if v, ok := atoms[idMap[placeKeys[currentKey]]].ConstProp["dragCD"]; ok {
+				limit = int(v)
+			} else {
+				limit = 5
+			}
+			if tryPlaceCoolDown >= limit {
 				tryPlace(window)
-				tryPlaceCoolDown = placeCD
+				tryPlaceCoolDown = 0
 			}
 		}
 		// fmt.Println(time.Since(s))

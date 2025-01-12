@@ -36,6 +36,7 @@ There are three optional sections in an atom declaration
      - `render` - not optional 0 = invisible, 1 = visible
      - `key` - the key needed to press before placing the block. Use lowercase letters and numbers only
      - `size` - the placed block size when you click (size = width = height)
+     - `dragCD` - the cooldown time of placing when dragging - always integer. Each increment is equal roughly to 16ms (therefore 60 is roughly a second)
 2) **Definition - Made with `section definition [block]`**
    - Where you define sets for use in rules
    - Syntax: `def [symbol] <Name1, Name2, ...>`

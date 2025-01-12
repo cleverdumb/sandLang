@@ -11,6 +11,8 @@ atom Sand alias S {
         cdef key s
         cdef size 5
 
+        cdef dragCD 1
+
         def test 0
     }
     section update {
