@@ -37,6 +37,7 @@ type AtomRef struct {
 	Init         []Step
 	DynamicColor bool
 	ColorRules   []ColorRule
+	ExtRules     []ExtRule
 }
 
 type ColorRule struct {
@@ -77,6 +78,11 @@ type Rule struct {
 	Prob           float64
 	DontBreak      bool
 	NoMatchPattern bool
+}
+
+type ExtRule struct {
+	Name  string
+	Param map[string]string
 }
 
 // opcode:
@@ -499,6 +505,22 @@ outsideLoop:
 						newRuleId++
 						continue outsideLoop
 					}
+				} else if strings.HasPrefix(l, "ext") {
+					split := reg["anySpace"].Split(l, 3)
+					name := split[1]
+
+					params := split[2][1 : len(split[2])-1]
+					splitParams := reg["splitSet"].Split(params, -1)
+
+					paramMap := make(map[string]string)
+					for _, v := range splitParams {
+						s := reg["spacedEqual"].Split(v, 2)
+						paramMap[s[0]] = strings.TrimSpace(s[1])
+					}
+
+					fmt.Println(paramMap)
+
+					Atoms[currentAtom].ExtRules = append(Atoms[currentAtom].ExtRules, ExtRule{Name: name, Param: paramMap})
 				}
 			}
 

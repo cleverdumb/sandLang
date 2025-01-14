@@ -6,6 +6,7 @@ import (
 	"math"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -245,6 +246,35 @@ func main() {
 	quitCh <- 1
 }
 
+func inGrid(x, y int) bool {
+	return x >= 0 && y >= 0 && x < gw && y < gh
+}
+
+func inCellSet(t uint8, def map[string][]string, rule string) bool {
+	if rule[0] == '~' {
+		if v, ok := def[rule[1:]]; ok {
+			// fmt.Println(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias, idMap[grid[tarY][tarX].t])
+			if slices.Contains(v, idMap[t]) || slices.Contains(v, "^"+atoms[idMap[t]].Alias) {
+				return false
+			}
+		}
+	} else {
+		if v, ok := def[rule]; ok {
+			if !(slices.Contains(v, idMap[t]) || slices.Contains(v, "^"+atoms[idMap[t]].Alias)) {
+				return false
+			}
+		} else if a, ok := aliasMap[rule]; ok {
+			if idMap[t] != a {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	return true
+}
+
 var currentKey rune
 
 func keyPress(window *glfw.Window, char rune) {
@@ -421,92 +451,140 @@ outside:
 					}
 				}
 
-				// if len(ref.Rules) > 0 {
-				for _, v := range rand.Perm(len(ref.Rules)) {
-					// ind := rand.Intn(len(ref.Rules))
-					ind := v
-					// fmt.Println(ind)
-					rule := ref.Rules[ind]
-					// for ind, rule := range ref.Rules {
-					if rand.Float64() > rule.Prob {
-						// if !rule.DontBreak {
-						// 	break
-						// } else {
-						// 	continue
-						// }
-						continue
-					}
-					ruleApply := true
-					// s := 0
-					// if rule.XSym && rand.Intn(2) == 0 {
-					// 	s |= symX
-					// }
-					// if rule.YSym && rand.Intn(2) == 0 {
-					// 	s |= symY
-					// }
+				totalLength := len(ref.Rules) + len(ref.ExtRules)
+				// fmt.Println(totalLength)
+				if totalLength > 0 {
+					if rand.Intn(totalLength) < len(ref.Rules) {
+						for _, v := range rand.Perm(len(ref.Rules)) {
+							// ind := rand.Intn(len(ref.Rules))
+							ind := v
+							// fmt.Println(ind)
+							rule := ref.Rules[ind]
+							// for ind, rule := range ref.Rules {
+							if rand.Float64() > rule.Prob {
+								// if !rule.DontBreak {
+								// 	break
+								// } else {
+								// 	continue
+								// }
+								continue
+							}
+							ruleApply := true
+							// s := 0
+							// if rule.XSym && rand.Intn(2) == 0 {
+							// 	s |= symX
+							// }
+							// if rule.YSym && rand.Intn(2) == 0 {
+							// 	s |= symY
+							// }
 
-					var ox, oy int
-					s := 0
-					if !(rule.XSym && rand.Intn(2) == 0) {
-						ox = rx - int(rule.Ox)
-					} else {
-						// ox = rx + int(rule.Ox) - int(rule.W)
-						ox = rx - (int(rule.W) - int(rule.Ox) - 1)
-						s |= symX
-					}
+							var ox, oy int
+							s := 0
+							if !(rule.XSym && rand.Intn(2) == 0) {
+								ox = rx - int(rule.Ox)
+							} else {
+								// ox = rx + int(rule.Ox) - int(rule.W)
+								ox = rx - (int(rule.W) - int(rule.Ox) - 1)
+								s |= symX
+							}
 
-					if !(rule.YSym && rand.Intn(2) == 0) {
-						oy = ry - int(rule.Oy)
-					} else {
-						// fmt.Println("YSym")
-						oy = ry - (int(rule.H) - int(rule.Oy) - 1)
-						s |= symY
-					}
+							if !(rule.YSym && rand.Intn(2) == 0) {
+								oy = ry - int(rule.Oy)
+							} else {
+								// fmt.Println("YSym")
+								oy = ry - (int(rule.H) - int(rule.Oy) - 1)
+								s |= symY
+							}
 
-					// fmt.Println(rule.XSym, rule.YSym, rand.Intn(2))
+							// fmt.Println(rule.XSym, rule.YSym, rand.Intn(2))
 
-					// fmt.Printf("ox: %v, oy: %v, s: %v\n", ox, oy, s)
+							// fmt.Printf("ox: %v, oy: %v, s: %v\n", ox, oy, s)
 
-					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
-					if !rule.NoMatchPattern {
-						if !matchRule(ref, ox, oy, ind, s) {
-							ruleApply = false
-							continue
+							// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
+							if !rule.NoMatchPattern {
+								if !matchRule(ref, ox, oy, ind, s) {
+									ruleApply = false
+									continue
+								}
+							}
+
+							// fmt.Println(ref.ConstProp)
+
+							for _, con := range rule.MatchCon {
+								res := evaluateMath(con.Expr, con.Names, con.RandVars, s, rx, ry, false)
+
+								// fmt.Println(res)
+
+								if res == false {
+									ruleApply = false
+									break
+								}
+							}
+
+							if !ruleApply {
+								// if !rule.DontBreak {
+								// 	break
+								// } else {
+								// 	continue
+								// }
+								continue
+							}
+
+							if ruleApply {
+								// fmt.Println("APPLYING")
+								doSteps(rule, ox, oy, s, rx, ry)
+								// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
+								// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
+								// }
+							}
+
+							if !rule.DontBreak {
+								break
+							}
 						}
-					}
+					} else {
+						ind := rand.Intn(len(ref.ExtRules))
+						rule := ref.ExtRules[ind]
+						// fmt.Println(rule)
+						param := rule.Param
 
-					// fmt.Println(ref.ConstProp)
+						running := true
 
-					for _, con := range rule.MatchCon {
-						res := evaluateMath(con.Expr, con.Names, con.RandVars, s, rx, ry, false)
+						if v, ok := param["prob"]; ok {
+							p, err := strconv.ParseFloat(v, 64)
+							if err != nil {
+								panic(err)
+							}
 
-						// fmt.Println(res)
-
-						if res == false {
-							ruleApply = false
-							break
+							if rand.Float64() > p {
+								running = false
+							}
 						}
-					}
 
-					if !ruleApply {
-						// if !rule.DontBreak {
-						// 	break
-						// } else {
-						// 	continue
-						// }
-						continue
-					}
+						if running {
+							switch rule.Name {
+							case "randomMove":
+								dx, dy := 0, 0
+								for dx == 0 && dy == 0 {
+									dx, dy = rand.Intn(3)-1, rand.Intn(3)-1
+								}
+								// fmt.Println(dx, dy)
+								xp, yp := rx+dx, ry+dy
 
-					if ruleApply {
-						// fmt.Println("APPLYING")
-						doSteps(rule, ox, oy, s, rx, ry)
-						// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
-						// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
-						// }
-					}
-
-					if !rule.DontBreak {
-						break
+								if inGrid(xp, yp) {
+									replSym := param["repl"]
+									if _, ok := ref.Def[replSym]; ok {
+										toCell := grid[yp][xp]
+										// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
+										if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
+											// fmt.Println("MARKER")
+											transfer(grid[ry][rx], xp, yp)
+											transfer(toCell, rx, ry)
+										}
+									}
+								}
+							}
+						}
 					}
 				}
 				// fmt.Println(ind, ruleApply)
@@ -627,27 +705,11 @@ out:
 					break out
 				}
 			default:
-				if cellRule[0] == '~' {
-					if v, ok := atom.Def[cellRule[1:]]; ok {
-						// fmt.Println(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias, idMap[grid[tarY][tarX].t])
-						if slices.Contains(v, idMap[grid[tarY][tarX].t]) || slices.Contains(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias) {
-							matching = false
-							break out
-						}
-					}
-				} else {
-					if v, ok := atom.Def[cellRule]; ok {
-						if !(slices.Contains(v, idMap[grid[tarY][tarX].t]) || slices.Contains(v, "^"+atoms[idMap[grid[tarY][tarX].t]].Alias)) {
-							matching = false
-							break out
-						}
-					} else if a, ok := aliasMap[cellRule]; ok {
-						if idMap[grid[tarY][tarX].t] != a {
-							matching = false
-						}
-					} else {
-						matching = false
-					}
+				inSet := inCellSet(grid[tarY][tarX].t, atom.Def, cellRule)
+
+				if !inSet {
+					matching = false
+					break out
 				}
 			}
 		}

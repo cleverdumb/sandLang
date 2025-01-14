@@ -4,38 +4,19 @@ atom Empty alias E {
     }
 }
 
-atom Sand alias S {
+atom Gas alias G {
     section property {
         cdef render 1
-        cdef color #FFC857
-        cdef key s
+        cdef color #FF0000
+        cdef key g
         cdef size 5
 
         cdef dragCD 1
-
-        def test 0
+    }
+    section definition {
+        def R <^E>
     }
     section update {
-        match (0, 0, 1, 2) {
-            pattern
-            x
-            _
-        }
-        -> {
-            pattern
-            _
-            x
-        }
-
-        match (0, 0, 2, 2) sym(x) {
-            pattern
-            x _
-            n _
-        }
-        -> {
-            pattern
-            _ /
-            / x
-        }
+        ext randomMove <repl=R, prob = 0.5>
     }
 }
