@@ -152,6 +152,20 @@ At the top of the file you can preload color for more efficient simulation by `p
 All colors with components all between the two colors will be preloaded. Only preload colors that are needed to save memory\
 The second color can be ignored. In that case only the first color will be loaded. Colors are in format #RRGGBB
 
+### External functions
+There are a couple default functions implemented. Each are included with `ext [name] <[paramName]=[value], ...>`\
+They should be put where a rule would normally go, therefore in the *update* block\
+One rule will be picked, either from other rules or these external rules\
+They are *conditionless*, therefore they will always execute (although not necessarily make change)
+
+Parameters should be simple strings, or numbers, but **not** maths statements
+
+All external function has a `prob` parameter, which determines the probability of its execution when it is picked. It should be a number between 0 and 1, where 0 is never execute and 1 is always execute
+
+Functions (and their parameters indented):
+- `randomMove` - Randomly move the particle to an adjacent (including diagonal) square by swapping position with the target
+  - `repl` - required - must be either symbol of a set or global set (inverted by prepending `~`), or an alias of an element. It describes which elements the particle can swap with (similar to a rule of a cell)
+
 ### Other features
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`
 - Global rule sets can contain a set of rules to be inherited by other atoms for less redundancy. They are defined with `ruleset [name] [Block]` and the `[Block]` contains rules. Atoms have a higher priority over rule sets if they have the same name
