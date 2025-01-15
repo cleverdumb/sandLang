@@ -50,8 +50,8 @@ void main() {
 ` + "\x00"
 
 const (
-	gw          = 100
-	gh          = 100
+	gw          = 200
+	gh          = 200
 	scrW        = 800
 	scrH        = 800
 	bw          = scrW / gw
@@ -59,7 +59,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 200 * time.Nanosecond
+	updateDelay = 0 * time.Nanosecond
 	// placeCD     = 2
 )
 
@@ -583,12 +583,43 @@ outside:
 										}
 									}
 								}
+							case "sandLike":
+								dx, dy := rand.Intn(3)-1, 1
+								if dx == 0 {
+									// fmt.Println(dx, dy)
+									xp, yp := rx+dx, ry+dy
+
+									if inGrid(xp, yp) {
+										replSym := param["repl"]
+										if _, ok := ref.Def[replSym]; ok {
+											toCell := grid[yp][xp]
+											// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
+											if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
+												// fmt.Println("MARKER")
+												transfer(grid[ry][rx], xp, yp)
+												transfer(toCell, rx, ry)
+											}
+										}
+									}
+								} else {
+									xp, yp := rx+dx, ry+dy
+									replSym := param["repl"]
+									if inGrid(rx, ry+1) && grid[ry+1][rx].t != revIdMap["Empty"] && inGrid(xp, yp) {
+										if _, ok := ref.Def[replSym]; ok {
+											toCell := grid[yp][xp]
+											// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
+											if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
+												// fmt.Println("MARKER")
+												transfer(grid[ry][rx], xp, yp)
+												transfer(toCell, rx, ry)
+											}
+										}
+									}
+								}
 							}
 						}
 					}
 				}
-				// fmt.Println(ind, ruleApply)
-				// }
 			}
 
 			for dy := -1; dy <= 1; dy++ {

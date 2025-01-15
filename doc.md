@@ -165,6 +165,8 @@ All external function has a `prob` parameter, which determines the probability o
 Functions (and their parameters indented):
 - `randomMove` - Randomly move the particle to an adjacent (including diagonal) square by swapping position with the target
   - `repl` - required - must be either symbol of a set or global set (inverted by prepending `~`), or an alias of an element. It describes which elements the particle can swap with (similar to a rule of a cell)
+- `sandLike` - Similar to randomMove, but only the bottom three squares
+  - `repl` - required - same as randomMove
 
 ### Other features
 - Global sets are automatically added to all atoms defined after the definition of the global set. They are defined with `global [symbol] <Name1, Name2, Name3, ...>`. Similar to definition section in an atom, the names can be replaced by `^[alias]`

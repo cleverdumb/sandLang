@@ -4,12 +4,12 @@ atom Empty alias E {
     }
 }
 
-atom Gas alias G {
+atom Sand alias S {
     section property {
         cdef render 1
         cdef color #FF0000
-        cdef key g
-        cdef size 5
+        cdef key s
+        cdef size 10
 
         cdef dragCD 1
     }
@@ -17,6 +17,6 @@ atom Gas alias G {
         def R <^E>
     }
     section update {
-        ext randomMove <repl=R, prob = 0.5>
+        ext sandLike <repl=R, prob = 1>
     }
 }
