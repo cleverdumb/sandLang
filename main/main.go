@@ -59,7 +59,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 0 * time.Nanosecond
+	updateDelay = 2000 * time.Nanosecond
 	// placeCD     = 2
 )
 
@@ -102,6 +102,8 @@ type cell struct {
 
 	// mutex *sync.Mutex
 }
+
+var threadTarget [threadCount][2]int
 
 func init() {
 	// Lock OS thread to ensure OpenGL context works
@@ -204,7 +206,8 @@ func main() {
 	quitCh := make(chan uint8)
 
 	for x := 0; x < threadCount; x++ {
-		go updateThread(quitCh)
+		threadTarget[x] = [2]int{rand.Intn(gw), rand.Intn(gh)}
+		go updateThread(quitCh, uint8(x))
 	}
 
 	window.SetMouseButtonCallback(click)
@@ -348,7 +351,7 @@ func copyToBuffer() {
 	// fmt.Println(time.Since(s))
 }
 
-func updateThread(quit chan uint8) {
+func updateThread(quit chan uint8, threadId uint8) {
 outside:
 	for {
 		select {
@@ -358,7 +361,8 @@ outside:
 			// s := time.Now()
 			var rx, ry int
 			// if testUpdateX == -1 {
-			rx, ry = rand.Intn(gw), rand.Intn(gh)
+			// rx, ry = rand.Intn(gw), rand.Intn(gh)
+			rx, ry = threadTarget[threadId][0], threadTarget[threadId][1]
 			// 	continue outside
 			// } else {
 			// rx, ry = testUpdateX, testUpdateY
@@ -377,6 +381,8 @@ outside:
 			}
 
 			copyingToBuffer.Lock()
+
+			randomizeTarget := true
 
 			if name, ok := idMap[grid[ry][rx].t]; ok {
 				ref := *atoms[name]
@@ -414,7 +420,7 @@ outside:
 
 					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
 					if !rule.NoMatchPattern {
-						if !matchRule(ref, ox, oy, i, s) {
+						if !matchRule(ref, ox, oy, i, s, true) {
 							ruleApply = false
 							continue
 						}
@@ -448,6 +454,12 @@ outside:
 						// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
 						// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
 						// }
+					}
+
+					if rule.Shift[0] != 0 || rule.Shift[1] != 0 {
+						randomizeTarget = false
+						threadTarget[threadId][0] = rx + rule.Shift[0]
+						threadTarget[threadId][1] = ry + rule.Shift[1]
 					}
 				}
 
@@ -502,7 +514,7 @@ outside:
 
 							// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
 							if !rule.NoMatchPattern {
-								if !matchRule(ref, ox, oy, ind, s) {
+								if !matchRule(ref, ox, oy, ind, s, false) {
 									ruleApply = false
 									continue
 								}
@@ -536,6 +548,12 @@ outside:
 								// if _, ok := grid[ry-1][rx].prop["lifetime"]; ok {
 								// grid[ry-1][rx].prop["lifetime"] = grid[ry][rx].prop["lifetime"] + 1
 								// }
+							}
+
+							if rule.Shift[0] != 0 || rule.Shift[1] != 0 {
+								randomizeTarget = false
+								threadTarget[threadId][0] = rx + rule.Shift[0]
+								threadTarget[threadId][1] = ry + rule.Shift[1]
 							}
 
 							if !rule.DontBreak {
@@ -631,6 +649,10 @@ outside:
 				}
 			}
 			copyingToBuffer.Unlock()
+
+			if randomizeTarget {
+				threadTarget[threadId] = [2]int{rand.Intn(gw), rand.Intn(gh)}
+			}
 			// fmt.Println(time.Since(s))
 
 			time.Sleep(updateDelay)
@@ -667,8 +689,14 @@ func doInit(x, y int, t uint8) {
 	}
 }
 
-func matchRule(atom compile.AtomRef, ox, oy int, ruleIndex int, s int) bool {
-	r := atom.Rules[ruleIndex]
+func matchRule(atom compile.AtomRef, ox, oy int, ruleIndex int, s int, alwaysRule bool) bool {
+	// fmt.Println(ruleIndex)
+	var r compile.Rule
+	if alwaysRule {
+		r = atom.AlwaysRules[ruleIndex]
+	} else {
+		r = atom.Rules[ruleIndex]
+	}
 
 	// fmt.Println(s&symX, s&symY)
 	// ox, oy := rx-int(r.Ox), ry-int(r.Oy)

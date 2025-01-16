@@ -11,12 +11,23 @@ atom Sand alias S {
         cdef key s
         cdef size 10
 
-        cdef dragCD 1
+        cdef dragCD 0
     }
     section definition {
         def R <^E>
     }
     section update {
-        ext sandLike <repl=R, prob = 1>
+        match (0, 0, 2, 2) {
+            pattern
+            x *
+            * _
+        }
+        -> {
+            pattern
+            _ /
+            / x
+            shift (1, 1)
+            always-run
+        }
     }
 }

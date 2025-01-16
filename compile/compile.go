@@ -78,6 +78,7 @@ type Rule struct {
 	Prob           float64
 	DontBreak      bool
 	NoMatchPattern bool
+	Shift          [2]int
 }
 
 type ExtRule struct {
@@ -135,6 +136,7 @@ func CompileScript(log bool) map[string]*AtomRef {
 	reg["spacedArrow"] = regexp.MustCompile(`\s*=>\s*`)
 	reg["spacedBy"] = regexp.MustCompile(`\s+by\s+`)
 	reg["spacedIn"] = regexp.MustCompile(`\s+in\s+`)
+	reg["shiftStatement"] = regexp.MustCompile(`shift\s*\(\s*([\-0-9]+)\s*,\s*([\-0-9]+)\s*\)`)
 	inAtomDeclaration := false
 	currentAtom := ""
 	inComment := false
@@ -388,6 +390,7 @@ outsideLoop:
 					newRule.Ox = int8(ox)
 					newRule.Oy = int8(oy)
 					newRule.Id = newRuleId
+					newRule.Shift = [2]int{0, 0}
 
 					// fmt.Println(nums[4])
 					// fmt.Println(reg["fromSym"].FindStringSubmatch(nums[4]))
@@ -484,6 +487,7 @@ outsideLoop:
 						newRule.Oy = prev.Oy
 						newRule.XSym = prev.XSym
 						newRule.YSym = prev.YSym
+						newRule.Shift = [2]int{0, 0}
 					} else if p2 == "effect" {
 						newRule.DontBreak = prev.DontBreak
 						newRule.Pat = prev.Pat
@@ -621,6 +625,15 @@ outsideLoop:
 
 					newRule.Steps = append(newRule.Steps, Step{Opcode: 3, Name: []string{n[1 : len(n)-1]}, Eval: minEval, Vars: minVars, Operand: operand, RandVars: minRandVars})
 					newRule.Steps = append(newRule.Steps, Step{Opcode: 6, Name: []string{n[1 : len(n)-1]}, Eval: maxEval, Vars: maxVars, Operand: operand, RandVars: maxRandVars})
+				} else if strings.HasPrefix(l, "shift") {
+					split := reg["shiftStatement"].FindStringSubmatch(l)
+					x, err := strconv.Atoi(split[1])
+					checkErr(err)
+
+					y, err := strconv.Atoi(split[2])
+					checkErr(err)
+
+					newRule.Shift = [2]int{x, y}
 				}
 			}
 
