@@ -1,33 +1,29 @@
+default left 0
+
 atom Empty alias E {
     section property {
         cdef render 0
     }
 }
 
-atom Sand alias S {
+atom Test alias T {
     section property {
         cdef render 1
         cdef color #FF0000
-        cdef key s
+        cdef key t
         cdef size 10
 
         cdef dragCD 0
     }
-    section definition {
-        def R <^E>
-    }
     section update {
-        match (0, 0, 2, 2) {
+        match (0, 0, 2, 1) sym(x) {
             pattern
-            x *
-            * _
+            x _
         }
         -> {
             pattern
-            _ /
-            / x
-            shift (1, 1)
-            always-run
+            _ x
+            shift (-1, 0)
         }
     }
 }

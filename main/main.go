@@ -59,7 +59,7 @@ const (
 	threadCount = 7
 	symX        = 1 << 0
 	symY        = 1 << 1
-	updateDelay = 2000 * time.Nanosecond
+	updateDelay = 200 * time.Nanosecond
 	// placeCD     = 2
 )
 
@@ -387,8 +387,9 @@ outside:
 			if name, ok := idMap[grid[ry][rx].t]; ok {
 				ref := *atoms[name]
 
-				for i, v := range ref.AlwaysRules {
-					rule := v
+				for _, v := range rand.Perm(len(ref.AlwaysRules)) {
+					ind := v
+					rule := ref.AlwaysRules[ind]
 					// fmt.Println(rule)
 
 					if rand.Float64() > rule.Prob {
@@ -420,7 +421,7 @@ outside:
 
 					// sx, sy := rule.XSym && rand.Intn(2) == 0, rule.YSym && rand.Intn(2) == 0
 					if !rule.NoMatchPattern {
-						if !matchRule(ref, ox, oy, i, s, true) {
+						if !matchRule(ref, ox, oy, ind, s, true) {
 							ruleApply = false
 							continue
 						}
@@ -458,8 +459,8 @@ outside:
 
 					if rule.Shift[0] != 0 || rule.Shift[1] != 0 {
 						randomizeTarget = false
-						threadTarget[threadId][0] = rx + rule.Shift[0]
-						threadTarget[threadId][1] = ry + rule.Shift[1]
+						threadTarget[threadId][0] = rx + rule.Shift[0]*((s&symX)*2-1)
+						threadTarget[threadId][1] = ry + rule.Shift[1]*(((s&symX)>>1)*2-1)
 					}
 				}
 
@@ -552,8 +553,8 @@ outside:
 
 							if rule.Shift[0] != 0 || rule.Shift[1] != 0 {
 								randomizeTarget = false
-								threadTarget[threadId][0] = rx + rule.Shift[0]
-								threadTarget[threadId][1] = ry + rule.Shift[1]
+								threadTarget[threadId][0] = rx + rule.Shift[0]*((s&symX)*2-1)
+								threadTarget[threadId][1] = ry + rule.Shift[1]*(((s&symX)>>1)*2-1)
 							}
 
 							if !rule.DontBreak {
