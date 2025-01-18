@@ -96,7 +96,8 @@ Each line in the update block corresponds to a step of one of these:
 4) `non-break` picks another rule to execute after this one, instead of choosing another random block
 5) Incrementing a property `inc [property] by [Increment (Maths statement)]` (Also decrements - ie negative increment)
 6) Clamping a variable between two values (inclusive) - `clamp [property] in [min], [max]` (min and max are maths statement)
-7) `always-run` makes the rule ran everytime the cell is picked. They always run before other rules, and all rules with this tag is ran, then one of the normal rules is picked. Do not move the `x` in these rules - Other rules will still be centered on the original centre
+7) `always-run` makes the rule ran everytime the cell is picked. They always run before other rules - All rules with this tag is ran, then one of the normal rules is picked. Do not move the `x` in these rules - Other rules will still be centered on the original centre
+8) Shifting the focus - `shift ([x], [y])` where the x and y are relative to the position of `x` in match. This forces the same thread to next target the cell at that position. If multiple rules are executed, later `shift` replace earlier `shift`
 
 The entire block can be replaced with `repeat effect` to repeat *update block* along with probability from the previous rule
 
