@@ -1,5 +1,3 @@
-default left 0
-
 atom Empty alias E {
     section property {
         cdef render 0
@@ -16,14 +14,6 @@ atom Test alias T {
         cdef dragCD 0
     }
     section update {
-        match (0, 0, 2, 1) sym(x) {
-            pattern
-            x _
-        }
-        -> {
-            pattern
-            _ x
-            shift (-1, 0)
-        }
+        ext randomMove <repl = E>
     }
 }

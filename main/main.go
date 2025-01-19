@@ -592,15 +592,15 @@ outside:
 
 								if inGrid(xp, yp) {
 									replSym := param["repl"]
-									if _, ok := ref.Def[replSym]; ok {
-										toCell := grid[yp][xp]
-										// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
-										if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
-											// fmt.Println("MARKER")
-											transfer(grid[ry][rx], xp, yp)
-											transfer(toCell, rx, ry)
-										}
+									// if _, ok := ref.Def[replSym]; ok {
+									toCell := grid[yp][xp]
+									// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
+									if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
+										// fmt.Println("MARKER")
+										transfer(grid[ry][rx], xp, yp)
+										transfer(toCell, rx, ry)
 									}
+									// }
 								}
 							case "sandLike":
 								dx, dy := rand.Intn(3)-1, 1
@@ -610,30 +610,46 @@ outside:
 
 									if inGrid(xp, yp) {
 										replSym := param["repl"]
-										if _, ok := ref.Def[replSym]; ok {
-											toCell := grid[yp][xp]
-											// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
-											if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
-												// fmt.Println("MARKER")
-												transfer(grid[ry][rx], xp, yp)
-												transfer(toCell, rx, ry)
-											}
+										// if _, ok := ref.Def[replSym]; ok {
+										toCell := grid[yp][xp]
+										// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
+										if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
+											// fmt.Println("MARKER")
+											transfer(grid[ry][rx], xp, yp)
+											transfer(toCell, rx, ry)
 										}
+										// }
 									}
 								} else {
 									xp, yp := rx+dx, ry+dy
 									replSym := param["repl"]
 									if inGrid(rx, ry+1) && grid[ry+1][rx].t != revIdMap["Empty"] && inGrid(xp, yp) {
-										if _, ok := ref.Def[replSym]; ok {
-											toCell := grid[yp][xp]
-											// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
-											if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
-												// fmt.Println("MARKER")
-												transfer(grid[ry][rx], xp, yp)
-												transfer(toCell, rx, ry)
-											}
+										// if _, ok := ref.Def[replSym]; ok {
+										toCell := grid[yp][xp]
+										// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
+										if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
+											// fmt.Println("MARKER")
+											transfer(grid[ry][rx], xp, yp)
+											transfer(toCell, rx, ry)
 										}
+										// }
 									}
+								}
+							case "fall":
+								// fmt.Println(dx, dy)
+								xp, yp := rx, ry+1
+
+								if inGrid(xp, yp) {
+									replSym := param["repl"]
+									// if _, ok := ref.Def[replSym]; ok {
+									toCell := grid[yp][xp]
+									// fmt.Println(toCell, idMap[grid[ry][rx].t], ref.Def, replSym)
+									if inCellSet(grid[yp][xp].t, ref.Def, replSym) {
+										// fmt.Println("MARKER")
+										transfer(grid[ry][rx], xp, yp)
+										transfer(toCell, rx, ry)
+									}
+									// }
 								}
 							}
 						}
